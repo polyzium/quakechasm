@@ -1,0 +1,11 @@
+name: DarkChronics-Quake
+version: 0.1.0
+main: ru.darkchronics.quake.QuakePlugin
+description: Quake minigame for DC minigames server
+author: Polyzium
+website: https://darkchronics.ru
+api-version: '1.20'
+
+commands:
+  quake:
+    description: DarkChronics-Quake master command
