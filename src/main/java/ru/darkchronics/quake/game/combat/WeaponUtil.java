@@ -1,0 +1,382 @@
+package ru.darkchronics.quake.game.combat;
+
+import org.bukkit.*;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.entity.*;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.function.BiConsumer;
+
+import static ru.darkchronics.quake.game.combat.ProjectileUtil.*;
+
+public abstract class WeaponUtil {
+    public static final int[] weaponPeriods = {
+            2, // machinegun
+            20, // shotgun
+            16, // rocket
+            1, // lightning gun
+            30, // railgun
+            2, // plasma
+            50 // bfg
+    };
+
+    private static void applySpread(Vector vector, double spread) {
+        // Generate a random angle within the spread range
+        double horizontalAngle = Math.toRadians(Math.random() * spread - spread / 2);
+        double verticalAngle = Math.toRadians(Math.random() * spread - spread / 2);
+        double zAngle = Math.toRadians(Math.random() * spread - spread / 2);
+
+        // Rotate the vector around the Y-axis (horizontal angle)
+        vector.rotateAroundY(horizontalAngle);
+
+        // Rotate the vector around the X-axis (vertical angle)
+        vector.rotateAroundX(verticalAngle);
+        vector.rotateAroundZ(zAngle);
+
+        // Normalize the vector to ensure it retains its original length
+        vector.normalize();
+    }
+
+    public static RayTraceResult cast(Player player, double spread, double limit) {
+        Location loc = player.getLocation();
+        Vector look = player.getEyeLocation().getDirection();
+
+        applySpread(look, spread);
+
+        loc.setY(loc.y() + player.getHeight()-0.1);
+
+        return player.getWorld().rayTrace(loc, look, limit, FluidCollisionMode.NEVER, true, 0, e -> (e != player));
+    }
+
+    public static void spawnParticlesLine(Location startLocation, Location endLocation, Particle particle) {
+        World world = startLocation.getWorld();
+        double density = 4;
+
+        Vector direction = endLocation.toVector().subtract(startLocation.toVector()).normalize();
+        double distance = startLocation.distance(endLocation);
+        int particleCount = (int) (distance * density);
+
+        for (int i = 0; i < particleCount; i++) {
+            double ratio = (double) i / particleCount;
+            double x = startLocation.getX() + ratio * (endLocation.getX() - startLocation.getX());
+            double y = startLocation.getY() + ratio * (endLocation.getY() - startLocation.getY());
+            double z = startLocation.getZ() + ratio * (endLocation.getZ() - startLocation.getZ());
+
+            Location particleLocation = new Location(world, x, y, z);
+            world.spawnParticle(particle, particleLocation, 1, 0, 0, 0, 0);
+        }
+    }
+
+    public static void railTrail(Location startLocation, Location endLocation) {
+        World world = startLocation.getWorld();
+        double density = 4;
+
+        Vector direction = endLocation.toVector().subtract(startLocation.toVector()).normalize();
+        double distance = startLocation.distance(endLocation);
+        int particleCount = (int) (distance * density);
+
+        for (int i = 0; i < particleCount; i++) {
+            double ratio = (double) i / particleCount;
+            double x = startLocation.getX() + ratio * (endLocation.getX() - startLocation.getX());
+            double y = startLocation.getY() + ratio * (endLocation.getY() - startLocation.getY());
+            double z = startLocation.getZ() + ratio * (endLocation.getZ() - startLocation.getZ());
+
+            Location particleLocation = new Location(world, x, y, z);
+            world.spawnParticle(Particle.REDSTONE, particleLocation, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x00FF00), 1));
+        }
+    }
+
+    public static void bulletImpact(Location loc, Block hitBlock) {
+        loc.getWorld().spawnParticle(Particle.BLOCK_CRACK, loc, 8, hitBlock.getBlockData());
+        loc.getWorld().spawnParticle(Particle.CRIT, loc, 4, 0, 0, 0, 0.25);
+
+//        loc.getWorld().playSound(loc, Sound.BLOCK_STONE_BREAK, 0.5f, 2);
+//        loc.getWorld().playSound(loc, Sound.BLOCK_GRASS_BREAK, 0.1f, 2);
+//        loc.getWorld().playSound(loc, Sound.BLOCK_GLASS_BREAK, 0.25f, 2);
+
+        loc.getWorld().playSound(loc, "quake.weapons.impact", 0.5f, 1);
+    }
+
+    public static void lightningImpact(Location loc, Block hitBlock) {
+        loc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, loc, 16, 0.25,0.25,0.25, 0.1);
+
+        loc.getWorld().playSound(loc, "quake.weapons.impact_lightning", 0.5f, 1);
+    }
+
+    public static void railImpact(Location loc, Block hitBlock) {
+        loc.getWorld().spawnParticle(Particle.SMOKE_LARGE, loc, 8, 0,0,0, 0.05);
+
+//        loc.getWorld().playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 0.5f, 2);
+
+        loc.getWorld().playSound(loc, "quake.weapons.impact_energy", 0.5f, 1);
+    }
+
+    public static RayTraceResult fireHitscan(Player player, double damage, double spread, double limit, BiConsumer<Location, Block> impact) {
+        RayTraceResult ray = cast(player, spread, limit);
+        if (ray == null) return null;
+
+        Block hitBlock = ray.getHitBlock();
+        Vector hitPos = ray.getHitPosition();
+        Location hitLoc = new Location(player.getWorld(), hitPos.getX(), hitPos.getY(), hitPos.getZ());
+
+        Location playerLoc = player.getLocation();
+        playerLoc.setY(playerLoc.y() + player.getHeight()-0.1);
+
+        Entity entity = ray.getHitEntity();
+        if (entity instanceof LivingEntity livingEntity) {
+            livingEntity.setNoDamageTicks(0);
+            livingEntity.damage(damage, player);
+        } else if (entity instanceof EnderCrystal crystal) {
+            Location cloc = crystal.getLocation();
+            crystal.remove();
+            cloc.getWorld().createExplosion(cloc, 4, false, false);
+        }
+
+        if (hitBlock != null && !hitBlock.isEmpty() && impact != null) {
+            impact.accept(hitLoc, hitBlock);
+        };
+
+        return ray;
+    }
+
+    public static void knockback(Location from, Entity victim, double power) {
+        victim.setVelocity(victim.getVelocity().add(from.getDirection().multiply(power)));
+    }
+
+    // Actual weapons are here
+    public static void fireMachinegun(Player player) {
+//        player.getWorld().playSound(player, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 0.5f, 0.5f);
+        player.getWorld().playSound(player, "quake.weapons.machinegun.fire", 0.5f, 1);
+        fireHitscan(player, 1.4, 2, 256, WeaponUtil::bulletImpact);
+    }
+
+    public static void fireShotgun(Player player) {
+//        player.getWorld().playSound(player, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 0.5f, 0.5f);
+//        player.getWorld().playSound(player, Sound.ENTITY_GENERIC_EXPLODE, 0.25f, 2f);
+        player.getWorld().playSound(player, "quake.weapons.shotgun.fire", 0.5f, 1);
+        for (int i = 0; i < 11; i++) {
+            fireHitscan(player, 2, 8, 256, WeaponUtil::bulletImpact);
+        }
+    }
+
+    public static void fireRocket(Player player) {
+        player.getWorld().playSound(player, "quake.weapons.rocket_launcher.fire", 0.5f, 1);
+
+        Location playerLocation = player.getLocation();
+        playerLocation.setY(playerLocation.getY() + (player.getHeight() - 0.35));
+        RayTraceResult raycast = cast(player, 0, 2);
+        if (raycast != null) {
+            Location hitLoc = raycast.getHitPosition().toLocation(player.getWorld());
+            if (playerLocation.distance(hitLoc) < 1.3) {
+                explodeRocket(hitLoc, player, null);
+                return;
+            }
+        }
+
+        Snowball projectile = player.launchProjectile(Snowball.class);
+        setProjectileType(projectile, "rocket");
+        projectile.setItem(new ItemStack(Material.MAGMA_CREAM));
+        projectile.setGravity(false);
+        Vector vel = player.getEyeLocation().getDirection().multiply(1);
+        projectile.setVelocity(vel);
+        // TODO flyby sounds maybe?
+//        projectile.getWorld().playSound(projectile, Sound.MUSIC_DISC_PIGSTEP, 1, 1);
+
+        BukkitRunnable particleEmitterRunnable = new BukkitRunnable() {
+            private int ticks;
+            @Override
+            public void run() {
+                if (projectile.isDead()) {
+                    this.cancel();
+                    return;
+                }
+
+                if (this.ticks > 100) {
+                    projectile.remove();
+                    this.cancel();
+                    return;
+                }
+
+                projectile.setVelocity(vel);
+
+                Location ploc = projectile.getLocation();
+                ploc.getWorld().spawnParticle(Particle.SMOKE_LARGE, ploc, 1, 0,0,0, 0.02);
+
+                this.ticks++;
+            }
+        };
+        particleEmitterRunnable.runTaskTimer(Bukkit.getPluginManager().getPlugin("DarkChronics-Quake"), 1, 1);
+    }
+
+    public static void fireLightning(Player player) {
+//        player.getWorld().playSound(player, "quake.weapons.lightning_gun.fire", 0.5f, 1);
+        RayTraceResult ray = fireHitscan(player, 1.6, 0, 32, WeaponUtil::lightningImpact);
+        if (ray == null) return;
+        if (ray.getHitEntity() != null) {
+            Entity victim = ray.getHitEntity();
+            knockback(player.getLocation(), victim, 0.25);
+        }
+
+        Location playerLoc = player.getLocation();
+        playerLoc.setY(playerLoc.y() + (player.getHeight()-0.4));
+        Vector hitPos = ray.getHitPosition();
+        Location hitLoc = new Location(player.getWorld(), hitPos.getX(), hitPos.getY(), hitPos.getZ());
+
+        spawnParticlesLine(playerLoc, hitLoc, Particle.ELECTRIC_SPARK);
+
+//        Entity entity = ray.getHitEntity();
+//        if (entity instanceof LivingEntity livingEntity) {
+//            player.teleport(livingEntity);
+//            livingEntity.damage(1000, player);
+//        }
+    }
+
+    public static void firePlasma(Player player) {
+//        player.getWorld().playSound(player, Sound.ENTITY_ARROW_SHOOT, 0.5f, 1f);
+        player.getWorld().playSound(player, "quake.weapons.plasma.fire", 0.5f, 1f);
+
+        Location loc = player.getLocation();
+        loc.setY(loc.y() + player.getHeight()-0.35);
+
+        Snowball projectile = player.launchProjectile(Snowball.class);
+        setProjectileType(projectile, "plasma");
+        projectile.setShooter(player);
+//        projectile.setItem(new ItemStack(Material.MAGMA_CREAM));
+        projectile.setGravity(false);
+        Vector vel = player.getEyeLocation().getDirection().multiply(1.75);
+        projectile.setVelocity(vel);
+
+        BukkitRunnable particleEmitterRunnable = new BukkitRunnable() {
+            private int ticks;
+            @Override
+            public void run() {
+                if (projectile.isDead()) {
+                    this.cancel();
+                    return;
+                }
+
+                if (this.ticks > 100) {
+                    projectile.remove();
+                    this.cancel();
+                    return;
+                }
+
+                projectile.setVelocity(vel);
+
+                Location ploc = projectile.getLocation();
+                ploc.getWorld().spawnParticle(Particle.REDSTONE, ploc, 1, 0,0,0, new Particle.DustOptions(Color.fromRGB(0x00FFFF), 1));
+//                ploc.getWorld().spawnParticle(Particle.SMOKE_LARGE, ploc, 1, 0,0,0, 0.02);
+
+                this.ticks++;
+            }
+        };
+       particleEmitterRunnable.runTaskTimer(Bukkit.getPluginManager().getPlugin("DarkChronics-Quake"), 1, 1);
+    }
+
+    public static void fireRailgun(Player player) {
+//        player.getWorld().playSound(player, Sound.BLOCK_BEACON_DEACTIVATE, 0.5f, 1f);
+//        player.getWorld().playSound(player, Sound.BLOCK_BEACON_ACTIVATE, 0.5f, 1f);
+        player.getWorld().playSound(player, "quake.weapons.railgun.fire", 0.5f, 1);
+        RayTraceResult ray = fireHitscan(player, 20, 0, 256, WeaponUtil::railImpact);
+        if (ray == null) return;
+        if (ray.getHitEntity() != null) {
+            Entity victim = ray.getHitEntity();
+            knockback(player.getLocation(), victim, 1.5);
+        }
+        Location playerLoc = player.getLocation();
+        playerLoc.setY(playerLoc.y() + (player.getHeight()-0.4));
+        Vector hitPos = ray.getHitPosition();
+        Location hitLoc = new Location(player.getWorld(), hitPos.getX(), hitPos.getY(), hitPos.getZ());
+
+        railTrail(playerLoc, hitLoc);
+
+//        Entity entity = ray.getHitEntity();
+//        if (entity instanceof LivingEntity livingEntity) {
+//            player.teleport(livingEntity);
+//            livingEntity.damage(1000, player);
+//        }
+    }
+
+    public static void fireBFG(Player player) {
+        // Play charge + fire sound
+        player.getWorld().playSound(player, "quake.weapons.bfg.fire", 1, 1);
+
+        // Wait 16 ticks, then fire
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                fireBFGGuts(player);;
+            }
+        }.runTaskLater(Bukkit.getPluginManager().getPlugin("DarkChronics-Quake"), 16);
+    }
+
+    private static void fireBFGGuts(Player player) {
+        Location playerLocation = player.getLocation();
+        playerLocation.setY(playerLocation.getY() + (player.getHeight() - 0.35));
+        RayTraceResult raycast = cast(player, 0, 2);
+        if (raycast != null) {
+            Location hitLoc = raycast.getHitPosition().toLocation(player.getWorld());
+            if (playerLocation.distance(hitLoc) < 1.3) {
+                explodeBFG(hitLoc, player);
+                return;
+            }
+        }
+
+        Snowball projectile = player.launchProjectile(Snowball.class);
+        setProjectileType(projectile, "bfg");
+        ItemDisplay display = (ItemDisplay) player.getWorld().spawnEntity(playerLocation, EntityType.ITEM_DISPLAY);
+        display.setItemStack(new ItemStack(Material.SLIME_BLOCK));
+        projectile.addPassenger(display);
+        projectile.setItem(new ItemStack(Material.AIR));
+        projectile.setGravity(false);
+        Vector vel = player.getEyeLocation().getDirection().multiply(0.5);
+        projectile.setVelocity(vel);
+//        projectile.getWorld().playSound(projectile, Sound.MUSIC_DISC_PIGSTEP, 1, 1);
+
+        BukkitRunnable particleEmitterRunnable = new BukkitRunnable() {
+            private int ticks;
+            @Override
+            public void run() {
+                if (projectile.isDead()) {
+                    display.remove();
+                    this.cancel();
+                    return;
+                }
+
+                if (this.ticks > 200) {
+                    display.remove();
+                    projectile.remove();
+                    this.cancel();
+                    return;
+                }
+
+                projectile.setVelocity(vel);
+
+                Location ploc = projectile.getLocation();
+                ploc.getWorld().spawnParticle(Particle.COMPOSTER, ploc, 4, 0.5,0.5,0.5, 1);
+
+                if (this.ticks % 2 == 0) {
+//                Entity attacker = (Entity) projectile.getShooter();
+                    for (Entity entity : ploc.getNearbyEntities(10, 10, 10)) {
+                        if (!(entity instanceof LivingEntity) || entity == player) continue;
+
+                        LivingEntity livingEntity = (LivingEntity) entity;
+                        livingEntity.setNoDamageTicks(0);
+                        livingEntity.damage(1, player);
+                        spawnParticlesLine(ploc, livingEntity.getEyeLocation(), Particle.ELECTRIC_SPARK);
+                        livingEntity.getWorld().playSound(livingEntity.getLocation(), "quake.weapons.bfg.laser", 0.5f, 1);
+                    }
+                }
+
+                this.ticks++;
+            }
+        };
+        particleEmitterRunnable.runTaskTimer(Bukkit.getPluginManager().getPlugin("DarkChronics-Quake"), 1, 1);
+    }
+}

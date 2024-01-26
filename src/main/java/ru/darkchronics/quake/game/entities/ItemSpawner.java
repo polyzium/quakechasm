@@ -5,58 +5,93 @@ import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Entity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import ru.darkchronics.quake.QuakePlugin;
 
-public class ItemSpawner implements Pickup {
-    private QuakePlugin plugin;
+public class ItemSpawner implements DisplayPickup {
+    QuakePlugin plugin;
     public ItemDisplay display;
-    private ItemStack item;
 
-    public ItemSpawner(ItemStack item, int interval, World world, Location location, QuakePlugin plugin) {
+    public ItemSpawner(ItemStack item, World world, Location location, QuakePlugin plugin) {
         this.plugin = plugin;
 
         this.display = (ItemDisplay) world.spawnEntity(location, EntityType.ITEM_DISPLAY);
         this.display.setItemStack(item);
-        this.item = item;
+
+        QEntityUtil.setEntityType(this.display, "item_spawner");
 
         PersistentDataContainer displayData = display.getPersistentDataContainer();
-        NamespacedKey intervalKey = new NamespacedKey(plugin, "interval");
-        displayData.set(intervalKey, PersistentDataType.INTEGER, interval);
+        NamespacedKey intervalKey = new NamespacedKey(plugin, "spawner_item");
+        displayData.set(intervalKey, PersistentDataType.BYTE_ARRAY, item.serializeAsBytes());
 
         // Init rotator
         this.display.setInterpolationDuration(20);
         this.display.setTeleportDuration(20);
         this.display.setRotation(0, 0);
 
-        plugin.itemSpawners.add(this);
+        plugin.triggers.add(this);
+    }
+
+    public ItemSpawner(ItemDisplay display, QuakePlugin plugin) {
+        assert display != null;
+
+        this.plugin = plugin;
+        this.display = display;
+
+        // Init rotator
+        this.display.setInterpolationDuration(20);
+        this.display.setTeleportDuration(20);
+        this.display.setRotation(0, 0);
+
+        plugin.triggers.add(this);
     }
 
     public void onPickup(Player player) {
         if (this.display.getItemStack().isEmpty())
             return;
 
+        PersistentDataContainer displayData = display.getPersistentDataContainer();
+        NamespacedKey itemKey = new NamespacedKey(plugin, "spawner_item");
+        byte[] itemData = displayData.get(itemKey, PersistentDataType.BYTE_ARRAY);
+        ItemStack item = ItemStack.deserializeBytes(itemData);
+
         player.getInventory().addItem(item);
         this.display.setItemStack(new ItemStack(Material.AIR)); // Make invisible
-        player.sendActionBar(Component.text("You picked up ").append(this.item.displayName()));
+        player.getWorld().playSound(player, "quake.weapons.pickup", 0.5f, 1f);
+        player.sendActionBar(Component.text("You picked up ").append(item.displayName()));
 
-        // Respawn in [interval] seconds
-        PersistentDataContainer displayData = display.getPersistentDataContainer();
-        NamespacedKey intervalKey = new NamespacedKey(plugin, "interval");
-        int interval = displayData.get(intervalKey, PersistentDataType.INTEGER);
+        // Respawn in 5 seconds
+        // TODO 30 seconds for Team Deathmatch
         new BukkitRunnable() {
              public void run() {
                 display.setItemStack(item);
                 display.getWorld().spawnParticle(Particle.SPELL_INSTANT, display.getLocation(), 16, 0.5, 0.5, 0.5);
+                display.getWorld().playSound(display, "quake.items.respawn", 0.5f, 1f);
             }
-        }.runTaskLater(this.plugin, interval);
+        }.runTaskLater(this.plugin, 100);
+    }
+
+    public Location getLocation() {
+        return this.display.getLocation();
+    }
+
+    public ItemDisplay getDisplay() {
+        return this.display;
+    }
+    public Entity getEntity() {
+        return this.display;
     }
 
     public void remove() {
         this.display.remove();
+    }
+
+    public void onTrigger(Entity entity) {
+        if (!(entity instanceof Player)) return;
+        this.onPickup((Player) entity);
     }
 }

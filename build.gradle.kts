@@ -13,6 +13,7 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+    implementation("org.apache.commons:commons-lang3:3.14.0")
     paperweight.paperDevBundle("1.20.4-R0.1-SNAPSHOT")
 }
 
