@@ -11,10 +11,10 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import ru.darkchronics.quake.QuakePlugin;
 
-public class HealthSpawner extends ItemSpawner {
+public class HealthSpawner extends SpawnerBase {
     private int health;
     public HealthSpawner(int health, World world, Location location, QuakePlugin plugin) {
-        super(new ItemStack(Material.STONE), world, location, plugin);
+        super(new ItemStack(Material.PORKCHOP), world, location, plugin);
 
         ItemStack item = null;
         switch (health) {
@@ -36,9 +36,6 @@ public class HealthSpawner extends ItemSpawner {
 
         super.display.setItemStack(item);
         QEntityUtil.setEntityType(super.display, "health_spawner");
-
-        NamespacedKey itemKey = new NamespacedKey(plugin, "spawner_item");
-        displayData.set(itemKey, PersistentDataType.BYTE_ARRAY, item.serializeAsBytes());
     }
 
     public HealthSpawner(ItemDisplay display, QuakePlugin plugin) {
@@ -51,14 +48,10 @@ public class HealthSpawner extends ItemSpawner {
 
     @Override
     public void onPickup(Player player) {
-        // TODO move common code of Item- and HealthSpawner to elsewhere
         if (this.display.getItemStack().isEmpty() || player.getHealth() == player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue())
             return;
 
-        PersistentDataContainer displayData = display.getPersistentDataContainer();
-        NamespacedKey intervalKey = new NamespacedKey(super.plugin, "spawner_item");
-        byte[] itemData = displayData.get(intervalKey, PersistentDataType.BYTE_ARRAY);
-        ItemStack item = ItemStack.deserializeBytes(itemData);
+        ItemStack item = this.display.getItemStack();
 
         double totalHealth = player.getHealth() + this.health;
         if (totalHealth > 20) {
