@@ -6,9 +6,9 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import ru.darkchronics.quake.QuakePlugin;
-import ru.darkchronics.quake.game.entities.HealthSpawner;
-import ru.darkchronics.quake.game.entities.ItemSpawner;
-import ru.darkchronics.quake.game.entities.Jumppad;
+import ru.darkchronics.quake.game.entities.pickups.HealthSpawner;
+import ru.darkchronics.quake.game.entities.pickups.ItemSpawner;
+import ru.darkchronics.quake.game.entities.triggers.Jumppad;
 
 public class QuakeMasterCmd implements CommandExecutor {
     private QuakePlugin plugin;
@@ -35,7 +35,7 @@ public class QuakeMasterCmd implements CommandExecutor {
                 Location loc = player.getLocation();
                 loc.set(
                         Math.floor(loc.x())+0.5,
-                        loc.y() + 1,
+                        Math.floor(loc.y()) + 1,
                         Math.floor(loc.z())+0.5
                 );
                 new ItemSpawner(
@@ -84,7 +84,7 @@ public class QuakeMasterCmd implements CommandExecutor {
             Location loc = player.getLocation();
             loc.set(
                     Math.floor(loc.x())+0.5,
-                    loc.y(),
+                    Math.floor(loc.y()),
                     Math.floor(loc.z())+0.5
             );
 

@@ -1,4 +1,4 @@
-package ru.darkchronics.quake.game.entities;
+package ru.darkchronics.quake.game.entities.triggers;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.bukkit.Location;
@@ -14,6 +14,8 @@ import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3d;
 import ru.darkchronics.quake.QuakePlugin;
+import ru.darkchronics.quake.game.entities.QEntityUtil;
+import ru.darkchronics.quake.game.entities.Trigger;
 import ru.darkchronics.quake.misc.ParticleUtil;
 
 public class Jumppad implements Trigger {

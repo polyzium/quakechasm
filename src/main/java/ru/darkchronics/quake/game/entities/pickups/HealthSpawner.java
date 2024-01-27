@@ -1,4 +1,4 @@
-package ru.darkchronics.quake.game.entities;
+package ru.darkchronics.quake.game.entities.pickups;
 
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
@@ -10,6 +10,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import ru.darkchronics.quake.QuakePlugin;
+import ru.darkchronics.quake.game.entities.QEntityUtil;
 
 public class HealthSpawner extends SpawnerBase {
     private int health;
@@ -62,7 +63,7 @@ public class HealthSpawner extends SpawnerBase {
 
         this.display.setItemStack(new ItemStack(Material.AIR)); // Make invisible
         player.getWorld().playSound(player, "quake.items.health.pickup_"+this.health, 0.5f, 1f);
-        player.sendActionBar(Component.text("Picked up ").append(Component.text(this.health)).append(Component.text(" health")));
+        player.sendActionBar(Component.text(this.health).append(Component.text(" Health")));
 
         // Respawn in 35 seconds
         new BukkitRunnable() {

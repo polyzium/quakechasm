@@ -2,7 +2,6 @@ package ru.darkchronics.quake.events;
 
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -16,7 +15,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.game.entities.*;
-import ru.darkchronics.quake.game.entities.ItemSpawner;
+import ru.darkchronics.quake.game.entities.pickups.ItemSpawner;
 
 public class TriggerListener implements Listener {
     private final QuakePlugin plugin;
@@ -39,7 +38,6 @@ public class TriggerListener implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
-
         for (Trigger trigger : this.plugin.triggers) {
             if (trigger.isDead()) {
                 Location loc = trigger.getLocation();
@@ -53,7 +51,7 @@ public class TriggerListener implements Listener {
             Location sloc = trigger.getLocation();
             ploc.set(
                     addAbs(floorNoSign(ploc.x()), 0.5),
-                    floorNoSign(ploc.y()),
+                    Math.floor(ploc.y()),
                     addAbs(floorNoSign(ploc.z()), 0.5)
             );
 

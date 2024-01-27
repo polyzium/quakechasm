@@ -1,16 +1,13 @@
-package ru.darkchronics.quake.game.entities;
+package ru.darkchronics.quake.game.entities.pickups;
 
-import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Entity;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitRunnable;
 import ru.darkchronics.quake.QuakePlugin;
+import ru.darkchronics.quake.game.entities.DisplayPickup;
 
 public abstract class SpawnerBase implements DisplayPickup {
     QuakePlugin plugin;

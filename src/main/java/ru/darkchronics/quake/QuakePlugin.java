@@ -3,6 +3,7 @@ package ru.darkchronics.quake;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -13,6 +14,9 @@ import ru.darkchronics.quake.events.TriggerListener;
 import ru.darkchronics.quake.events.CombatListener;
 import ru.darkchronics.quake.game.entities.*;
 import ru.darkchronics.quake.events.MiscListener;
+import ru.darkchronics.quake.game.entities.pickups.HealthSpawner;
+import ru.darkchronics.quake.game.entities.pickups.ItemSpawner;
+import ru.darkchronics.quake.game.entities.triggers.Jumppad;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -86,6 +90,8 @@ public class QuakePlugin extends JavaPlugin {
     public void instantiateStates() {
         this.userStates = new HashMap<>(32);
         for (Player player : Bukkit.getOnlinePlayers()) {
+            player.setWalkSpeed(0.4f);
+            player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(20);
             this.userStates.put(player, new QuakeUserState(this));
         }
 

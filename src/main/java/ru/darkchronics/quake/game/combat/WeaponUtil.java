@@ -1,10 +1,12 @@
 package ru.darkchronics.quake.game.combat;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
@@ -51,7 +53,7 @@ public abstract class WeaponUtil {
 
         loc.setY(loc.y() + player.getHeight()-0.1);
 
-        return player.getWorld().rayTrace(loc, look, limit, FluidCollisionMode.NEVER, true, 0, e -> (e != player));
+        return player.getWorld().rayTrace(loc, look, limit, FluidCollisionMode.NEVER, true, 0.5, e -> (e != player));
     }
 
     public static void spawnParticlesLine(Location startLocation, Location endLocation, Particle particle) {
@@ -311,7 +313,17 @@ public abstract class WeaponUtil {
         new BukkitRunnable() {
             @Override
             public void run() {
-                fireBFGGuts(player);;
+                fireBFGGuts(player);
+
+                for (ItemStack item : player.getInventory().getContents()) {
+                    if (item != null) {
+                        ItemMeta meta = item.getItemMeta();
+                        if (meta.hasCustomModelData() && meta.getCustomModelData() == 6) {
+                            player.getInventory().remove(item);
+                            return;
+                        }
+                    }
+                }
             }
         }.runTaskLater(Bukkit.getPluginManager().getPlugin("DarkChronics-Quake"), 16);
     }
