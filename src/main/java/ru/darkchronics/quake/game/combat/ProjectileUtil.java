@@ -83,7 +83,7 @@ public abstract class ProjectileUtil {
             Location loc = entity.getLocation();
             Location eloc = ((LivingEntity) entity).getEyeLocation();
             double distance = impactLocation.distance(loc);
-            double entityDamage = splashDamage * (1.0 - (distance / explosionRadius));
+            double entityDamage = splashDamage * (1.0 - distance / explosionRadius);
             if (entityDamage < 0) continue;
 //            attacker.sendMessage(String.format("damage: %.2f, entityDamage: %.2f", splashDamage, entityDamage));
             ((LivingEntity) entity).setNoDamageTicks(0);

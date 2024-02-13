@@ -1,22 +1,28 @@
 package ru.darkchronics.quake;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
+import dev.jorel.commandapi.CommandAPI;
+import dev.jorel.commandapi.CommandAPIBukkitConfig;
+import net.kyori.adventure.text.Component;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.block.Block;
 import org.bukkit.entity.*;
+import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.joml.Matrix4d;
 import org.joml.Matrix4f;
-import ru.darkchronics.quake.commands.QuakeMasterCmd;
+import ru.darkchronics.quake.commands.Commands;
 import ru.darkchronics.quake.events.TriggerListener;
 import ru.darkchronics.quake.events.CombatListener;
 import ru.darkchronics.quake.game.entities.*;
 import ru.darkchronics.quake.events.MiscListener;
+import ru.darkchronics.quake.game.entities.pickups.AmmoSpawner;
 import ru.darkchronics.quake.game.entities.pickups.HealthSpawner;
 import ru.darkchronics.quake.game.entities.pickups.ItemSpawner;
+import ru.darkchronics.quake.game.entities.pickups.Spawner;
 import ru.darkchronics.quake.game.entities.triggers.Jumppad;
+import ru.darkchronics.quake.game.entities.triggers.Portal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +32,7 @@ public class QuakePlugin extends JavaPlugin {
 
     public ArrayList<Trigger> triggers;
     public Map<Player,QuakeUserState> userStates;
+    public ArrayList<Location> spawnpoints;
     private float rotatorAngle;
 
     public void startRotatingPickups() {
@@ -34,14 +41,14 @@ public class QuakePlugin extends JavaPlugin {
             @Override
             public void run() {
                 rotatorAngle += Math.PI/2;
-                for (int i = 0; i < triggers.size(); i++) {
-                    if (!(triggers.get(i) instanceof DisplayPickup)) continue;
+                for (Trigger trigger : triggers) {
+                    if (!(trigger instanceof DisplayPickup)) continue;
 
-                    ItemDisplay pickupDisplay = ((DisplayPickup) triggers.get(i)).getDisplay();
+                    ItemDisplay pickupDisplay = ((DisplayPickup) trigger).getDisplay();
                     if (pickupDisplay.isDead() && pickupDisplay.isEmpty()) {
                         Location loc = pickupDisplay.getLocation();
-                        getLogger().warning(String.format("An ItemSpawner at %.1f %.1f %.1f has been removed manually", loc.x(), loc.y(), loc.z()));
-                        triggers.remove(i);
+                        getLogger().warning(String.format("A DisplayPickup at %.1f %.1f %.1f has been removed manually", loc.x(), loc.y(), loc.z()));
+                        triggers.remove(trigger);
                         return;
                     }
                     pickupDisplay.setInterpolationDelay(-1);
@@ -61,17 +68,22 @@ public class QuakePlugin extends JavaPlugin {
         String entityType = QEntityUtil.getEntityType(entity);
         switch (entityType) {
             case "item_spawner":
-                this.triggers.add(new ItemSpawner((ItemDisplay) entity, this));
+                new ItemSpawner((ItemDisplay) entity, this);
                 break;
             case "health_spawner":
-                this.triggers.add(new HealthSpawner((ItemDisplay) entity, this));
+                new HealthSpawner((ItemDisplay) entity, this);
+                break;
+            case "ammo_spawner":
+                new AmmoSpawner((ItemDisplay) entity, this);
                 break;
             case "jumppad":
-                this.triggers.add(new Jumppad((Marker) entity, this));
+                new Jumppad((Marker) entity, this);
+                break;
+            case "portal":
+                new Portal((Marker) entity, this);
                 break;
             default:
                 getLogger().warning("Unknown entity type "+entityType+", ignoring.");
-                break;
         }
     }
 
@@ -87,14 +99,35 @@ public class QuakePlugin extends JavaPlugin {
         }
     }
 
+    public void initPlayer(Player player) {
+        player.setWalkSpeed(0.4f);
+        player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(20);
+        this.userStates.put(player, new QuakeUserState(this, player));
+    }
+
     public void instantiateStates() {
         this.userStates = new HashMap<>(32);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.setWalkSpeed(0.4f);
-            player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(20);
-            this.userStates.put(player, new QuakeUserState(this));
+            this.initPlayer(player);
         }
+    }
 
+    public void scanSpawnpoints() {
+        // TODO scan spawnpoints per map; to avoid lags due to very expensive scanning, use marker entities
+        World world = Bukkit.getWorld("flat");
+        this.spawnpoints = new ArrayList<>(16);
+        for (Chunk chunk : world.getLoadedChunks()) {
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int y = 0; y < 256; y++) {
+                        Block block = chunk.getBlock(x, y, z);
+                        if (block.getType() == Material.RED_CARPET) {
+                            this.spawnpoints.add(block.getLocation());
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -104,7 +137,7 @@ public class QuakePlugin extends JavaPlugin {
         getLogger().severe("!!! IF YOU LEAK THIS, YOU ARE A PIECE OF SHIT !!!");
 
         // commands
-        this.getCommand("quake").setExecutor(new QuakeMasterCmd(this));
+        Commands.initQuakeCommand(this);
 
         // events
         getServer().getPluginManager().registerEvents(new MiscListener(this), this);
@@ -114,6 +147,8 @@ public class QuakePlugin extends JavaPlugin {
         // other stuff
         getLogger().info("Instantiating states for current players");
         this.instantiateStates();
+        getLogger().info("Scanning spawnpoints in loaded chunks");
+        this.scanSpawnpoints();
         getLogger().info("Loading triggers");
         this.loadTriggers();
         this.startRotatingPickups();
@@ -122,5 +157,22 @@ public class QuakePlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         getLogger().info("DarkChronics Quake is shutting down");
+
+        HandlerList.unregisterAll(this);
+        getServer().getScheduler().cancelTasks(this);
+
+        getLogger().info("Respawning all empty spawners");
+        for (Trigger trigger : this.triggers) {
+            if (!(trigger instanceof Spawner)) continue;
+            ((Spawner) trigger).respawn();
+        }
+
+        getLogger().info("Untracking triggers");
+        this.triggers.clear();
+
+        getLogger().info("Clearing spawnpoints");
+        this.spawnpoints.clear();
+
+        getLogger().info("DarkChronics Quake disabled. Goodbye!");
     }
 }

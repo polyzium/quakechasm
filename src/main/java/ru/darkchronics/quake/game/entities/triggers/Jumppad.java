@@ -7,9 +7,11 @@ import org.bukkit.Particle;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Marker;
+import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3d;
@@ -19,6 +21,7 @@ import ru.darkchronics.quake.game.entities.Trigger;
 import ru.darkchronics.quake.misc.ParticleUtil;
 
 public class Jumppad implements Trigger {
+    static BoundingBox boundingBox = new BoundingBox(-0.5, 0, -0.5, 0.5, 1, 0.5);
     private QuakePlugin plugin;
     private Vector launchVec;
     private Marker marker;
@@ -71,9 +74,22 @@ public class Jumppad implements Trigger {
 
     @Override
     public void onTrigger(Entity entity) {
-        if (this.triggered) return;
+        if (this.triggered || entity.isSneaking()) return;
 
-        entity.setVelocity(this.launchVec);
+        // Fix for the overshoot problem
+        new BukkitRunnable() {
+            int ticks = 0;
+            @Override
+            public void run() {
+                if (ticks == 2) cancel();
+//                Vector v = launchVec.clone();
+//                entity.setVelocity(v.multiply(0.9));
+                entity.setVelocity(launchVec);
+                ticks++;
+            }
+        }.runTaskTimer(this.plugin, 0, 1);
+
+        this.marker.getWorld().playSound(this.marker.getLocation(), "quake.world.jumppad", 1, 1);
         Location iloc = entity.getLocation();
         iloc.setY(iloc.y()+0.1);
         this.triggered = true;
@@ -99,6 +115,20 @@ public class Jumppad implements Trigger {
         }.runTaskLater(this.plugin, 10);
     }
 
+    public static void testJump(Player player, Vector launchVec, QuakePlugin plugin) {
+        new BukkitRunnable() {
+            int ticks = 0;
+            @Override
+            public void run() {
+                if (ticks == 2) cancel();
+//                Vector v = launchVec.clone();
+//                entity.setVelocity(v.multiply(0.9));
+                player.setVelocity(launchVec);
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 0, 1);
+    }
+
     @Override
     public Location getLocation() {
         return this.marker.getLocation();
@@ -107,6 +137,15 @@ public class Jumppad implements Trigger {
     @Override
     public Entity getEntity() {
         return this.marker;
+    }
+
+    public Vector getLaunchVec() {
+        return launchVec;
+    }
+
+    @Override
+    public BoundingBox getOffsetBoundingBox() {
+        return boundingBox;
     }
 
     @Override

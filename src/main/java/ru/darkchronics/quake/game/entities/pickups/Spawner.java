@@ -6,14 +6,16 @@ import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Entity;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.BoundingBox;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.game.entities.DisplayPickup;
 
-public abstract class SpawnerBase implements DisplayPickup {
+public abstract class Spawner implements DisplayPickup {
     QuakePlugin plugin;
     public ItemDisplay display;
+    static BoundingBox boundingBox = new BoundingBox(-1, -1, -1, 1, 0, 1);
 
-    public SpawnerBase(ItemStack item, World world, Location location, QuakePlugin plugin) {
+    public Spawner(ItemStack item, World world, Location location, QuakePlugin plugin) {
         this.plugin = plugin;
 
         this.display = (ItemDisplay) world.spawnEntity(location, EntityType.ITEM_DISPLAY);
@@ -29,7 +31,7 @@ public abstract class SpawnerBase implements DisplayPickup {
         plugin.triggers.add(this);
     }
 
-    public SpawnerBase(ItemDisplay display, QuakePlugin plugin) {
+    public Spawner(ItemDisplay display, QuakePlugin plugin) {
         assert display != null;
 
         this.plugin = plugin;
@@ -40,10 +42,14 @@ public abstract class SpawnerBase implements DisplayPickup {
         this.display.setTeleportDuration(20);
         this.display.setRotation(0, 0);
 
-        plugin.triggers.add(this);
+        // Normally here you would plugin.triggers.add(this),
+        // but this adds only the super class (i.e. Spawner).
+        // Please do so in derived classes instead!
     }
 
     public abstract void onPickup(Player player);
+
+    public abstract void respawn();
 
     public Location getLocation() {
         return this.display.getLocation();
@@ -51,6 +57,10 @@ public abstract class SpawnerBase implements DisplayPickup {
 
     public ItemDisplay getDisplay() {
         return this.display;
+    }
+
+    public BoundingBox getOffsetBoundingBox() {
+        return boundingBox;
     }
 
     public Entity getEntity() {

@@ -1,24 +1,20 @@
 package ru.darkchronics.quake.game.combat;
 
-import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.function.BiConsumer;
 
 import static ru.darkchronics.quake.game.combat.ProjectileUtil.*;
 
 public abstract class WeaponUtil {
-    public static final int[] weaponPeriods = {
+    public static final int[] PERIODS = {
             2, // machinegun
             20, // shotgun
             16, // rocket
@@ -27,6 +23,18 @@ public abstract class WeaponUtil {
             2, // plasma
             50 // bfg
     };
+
+    public static final int[] DEFAULT_AMMO = {
+            100, // machinegun
+            10, // shotgun
+            10, // rocket
+            100, // lightning gun
+            10, // railgun
+            50, // plasma
+            1 // bfg
+    };
+
+    public static int WEAPONS_NUM = 7;
 
     private static void applySpread(Vector vector, double spread) {
         // Generate a random angle within the spread range
@@ -53,7 +61,7 @@ public abstract class WeaponUtil {
 
         loc.setY(loc.y() + player.getHeight()-0.1);
 
-        return player.getWorld().rayTrace(loc, look, limit, FluidCollisionMode.NEVER, true, 0.5, e -> (e != player));
+        return player.getWorld().rayTrace(loc, look, limit, FluidCollisionMode.NEVER, true, 0.5, e -> (e != player && (e instanceof LivingEntity)));
     }
 
     public static void spawnParticlesLine(Location startLocation, Location endLocation, Particle particle) {
@@ -90,7 +98,7 @@ public abstract class WeaponUtil {
             double z = startLocation.getZ() + ratio * (endLocation.getZ() - startLocation.getZ());
 
             Location particleLocation = new Location(world, x, y, z);
-            world.spawnParticle(Particle.REDSTONE, particleLocation, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x00FF00), 1));
+            world.spawnParticle(Particle.REDSTONE, particleLocation, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x00FF00), 1), true);
         }
     }
 
@@ -106,7 +114,7 @@ public abstract class WeaponUtil {
     }
 
     public static void lightningImpact(Location loc, Block hitBlock) {
-        loc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, loc, 16, 0.25,0.25,0.25, 0.1);
+        loc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, loc, 8, 0,0,0, 1);
 
         loc.getWorld().playSound(loc, "quake.weapons.impact_lightning", 0.5f, 1);
     }
@@ -216,13 +224,14 @@ public abstract class WeaponUtil {
         particleEmitterRunnable.runTaskTimer(Bukkit.getPluginManager().getPlugin("DarkChronics-Quake"), 1, 1);
     }
 
-    public static void fireLightning(Player player) {
-//        player.getWorld().playSound(player, "quake.weapons.lightning_gun.fire", 0.5f, 1);
-        RayTraceResult ray = fireHitscan(player, 1.6, 0, 32, WeaponUtil::lightningImpact);
+    public static void fireLightning(Player player, boolean emitSound) {
+        if (emitSound)
+            player.getWorld().playSound(player, "quake.weapons.lightning_gun.fire", 0.5f, 1);
+        RayTraceResult ray = fireHitscan(player, 1.6/2, 0, 16, WeaponUtil::lightningImpact);
         if (ray == null) return;
         if (ray.getHitEntity() != null) {
             Entity victim = ray.getHitEntity();
-            knockback(player.getLocation(), victim, 0.25);
+            knockback(player.getLocation(), victim, 0.25/2);
         }
 
         Location playerLoc = player.getLocation();
@@ -314,16 +323,6 @@ public abstract class WeaponUtil {
             @Override
             public void run() {
                 fireBFGGuts(player);
-
-                for (ItemStack item : player.getInventory().getContents()) {
-                    if (item != null) {
-                        ItemMeta meta = item.getItemMeta();
-                        if (meta.hasCustomModelData() && meta.getCustomModelData() == 6) {
-                            player.getInventory().remove(item);
-                            return;
-                        }
-                    }
-                }
             }
         }.runTaskLater(Bukkit.getPluginManager().getPlugin("DarkChronics-Quake"), 16);
     }
