@@ -227,11 +227,11 @@ public abstract class WeaponUtil {
     public static void fireLightning(Player player, boolean emitSound) {
         if (emitSound)
             player.getWorld().playSound(player, "quake.weapons.lightning_gun.fire", 0.5f, 1);
-        RayTraceResult ray = fireHitscan(player, 1.6/2, 0, 16, WeaponUtil::lightningImpact);
+        RayTraceResult ray = fireHitscan(player, 1.6, 0, 16, WeaponUtil::lightningImpact);
         if (ray == null) return;
         if (ray.getHitEntity() != null) {
             Entity victim = ray.getHitEntity();
-            knockback(player.getLocation(), victim, 0.25/2);
+            knockback(player.getLocation(), victim, 0.25);
         }
 
         Location playerLoc = player.getLocation();
