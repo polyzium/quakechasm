@@ -61,7 +61,7 @@ public abstract class WeaponUtil {
 
         loc.setY(loc.y() + player.getHeight()-0.1);
 
-        return player.getWorld().rayTrace(loc, look, limit, FluidCollisionMode.NEVER, true, 0.5, e -> (e != player && (e instanceof LivingEntity)));
+        return player.getWorld().rayTrace(loc, look, limit, FluidCollisionMode.NEVER, true, 0.1, e -> (e != player && (e instanceof LivingEntity)));
     }
 
     public static void spawnParticlesLine(Location startLocation, Location endLocation, Particle particle) {
