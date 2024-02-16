@@ -18,6 +18,7 @@ import ru.darkchronics.quake.game.combat.WeaponUtil;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
 import ru.darkchronics.quake.game.entities.Trigger;
 import ru.darkchronics.quake.game.entities.pickups.AmmoSpawner;
+import ru.darkchronics.quake.game.entities.pickups.ArmorSpawner;
 import ru.darkchronics.quake.game.entities.pickups.HealthSpawner;
 import ru.darkchronics.quake.game.entities.pickups.ItemSpawner;
 import ru.darkchronics.quake.game.entities.triggers.Jumppad;
@@ -241,6 +242,44 @@ public abstract class Commands {
                         })
                 );
 
+        CommandAPICommand armorSpawnerCmd = new CommandAPICommand("armorspawner")
+                .withSubcommand(new CommandAPICommand("create")
+                        .withArguments(
+                                new StringArgument("type")
+                                        .includeSuggestions(ArgumentSuggestions.strings("shard", "light", "heavy"))
+                        )
+                        .executesPlayer((player, args) -> {
+                            Location loc = player.getLocation();
+                            loc.set(
+                                    Math.floor(loc.x())+0.5,
+                                    loc.y() + 1,
+                                    Math.floor(loc.z())+0.5
+                            );
+                            int armor = 0;
+                            switch ((String) args.get("type")) {
+                                case "shard":
+                                    armor = 5;
+                                    break;
+                                case "light":
+                                    armor = 50;
+                                    break;
+                                case "heavy":
+                                    armor = 100;
+                                    break;
+                                default:
+                                    player.sendMessage("§cWrong armor type, use either of: shard, light, heavy");
+                                    return;
+                            }
+                            new ArmorSpawner(
+                                    armor,
+                                    player.getWorld(),
+                                    loc,
+                                    plugin
+                            );
+                            player.sendMessage(String.format("Made an ArmorSpawner at %.1f %.1f %.1f", loc.x(), loc.y(), loc.z()));
+                        })
+                );
+
         CommandAPICommand itemSpawnerCmd = new CommandAPICommand("itemspawner")
                 .withSubcommand(new CommandAPICommand("create"))
                 .executesPlayer((player, args) -> {
@@ -286,6 +325,7 @@ public abstract class Commands {
                         itemSpawnerCmd,
                         healthSpawnerCmd,
                         ammoSpawnerCmd,
+                        armorSpawnerCmd,
                         jumppadCmd,
                         portalCmd,
                         reloadCmd,

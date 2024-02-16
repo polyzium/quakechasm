@@ -17,10 +17,7 @@ import ru.darkchronics.quake.events.TriggerListener;
 import ru.darkchronics.quake.events.CombatListener;
 import ru.darkchronics.quake.game.entities.*;
 import ru.darkchronics.quake.events.MiscListener;
-import ru.darkchronics.quake.game.entities.pickups.AmmoSpawner;
-import ru.darkchronics.quake.game.entities.pickups.HealthSpawner;
-import ru.darkchronics.quake.game.entities.pickups.ItemSpawner;
-import ru.darkchronics.quake.game.entities.pickups.Spawner;
+import ru.darkchronics.quake.game.entities.pickups.*;
 import ru.darkchronics.quake.game.entities.triggers.Jumppad;
 import ru.darkchronics.quake.game.entities.triggers.Portal;
 
@@ -72,6 +69,9 @@ public class QuakePlugin extends JavaPlugin {
                 break;
             case "health_spawner":
                 new HealthSpawner((ItemDisplay) entity, this);
+                break;
+            case "armor_spawner":
+                new ArmorSpawner((ItemDisplay) entity, this);
                 break;
             case "ammo_spawner":
                 new AmmoSpawner((ItemDisplay) entity, this);

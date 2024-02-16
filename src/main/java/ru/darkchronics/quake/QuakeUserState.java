@@ -16,11 +16,31 @@ public class QuakeUserState {
     public WeaponUserState weaponState;
     public Location portalLoc = null;
     public BukkitRunnable healthDecreaser;
+    public BukkitRunnable armorDecreaser;
+    public int armor = 0;
 
     public QuakeUserState(QuakePlugin plugin, Player player) {
         this.plugin = plugin;
         this.player = player;
         this.weaponState = new WeaponUserState(plugin);
+    }
+
+    public void startArmorDecreaser() {
+        if (this.armorDecreaser != null) return;
+
+        this.armorDecreaser = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (armor <= 100) {
+                    armor = 100;
+                    this.cancel();
+                    armorDecreaser = null;
+                    return;
+                }
+                armor -= 1;
+            }
+        };
+        armorDecreaser.runTaskTimer(this.plugin, 20, 20);
     }
 
     public void startHealthDecreaser() {

@@ -4,6 +4,8 @@ import com.destroystokyo.paper.event.entity.EntityKnockbackByEntityEvent;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
@@ -12,19 +14,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
 import ru.darkchronics.quake.game.combat.ProjectileUtil;
@@ -78,26 +75,26 @@ public class CombatListener implements Listener {
         event.setCancelled(true);
     }
 
-    // Play hit sound
-    @EventHandler
-    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        if (!(event.getEntity() instanceof LivingEntity victim)) return;
-        if (event.getEntity() == event.getDamager()) return;
-
-        Entity attacker = event.getDamager();
-        float health = (float) (victim.getHealth() - event.getDamage());
-        attacker.playSound(
-                Sound.sound(Key.key("quake.feedback.hit"),
-                        Sound.Source.NEUTRAL,
-                        1f,
-                        (float) Math.round((1f + (health / 66)) * 6) /6
-                )
-        );
-    }
-
     // Handle 20+ health (for things like Mega Health or Regeneration)
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
+        // Play hit sound
+        if (
+                event instanceof EntityDamageByEntityEvent attackEvent &&
+                        event.getEntity() instanceof LivingEntity victim &&
+                        event.getEntity() != attackEvent.getDamager()
+        ) {
+            Entity attacker = attackEvent.getDamager();
+            float health = (float) (victim.getHealth() - event.getDamage());
+            attacker.playSound(
+                    Sound.sound(Key.key("quake.feedback.hit"),
+                            Sound.Source.NEUTRAL,
+                            1f,
+                            (float) Math.round((1f + (health / 66)) * 6) /6
+                    )
+            );
+        }
+
         if (
                 event.getEntity().getType() != EntityType.PLAYER ||
                 (event.getEntity().getType() == EntityType.PLAYER && event.getCause() == EntityDamageEvent.DamageCause.FALL && event.getEntity().getFallDistance() < 10)
@@ -105,7 +102,30 @@ public class CombatListener implements Listener {
         ) return;
 
         Player player = (Player) event.getEntity();
-        double finalMaxHealth = player.getHealth() - event.getDamage();
+        QuakeUserState userState = this.plugin.userStates.get(player);
+
+        // Calculate armor factor
+        double finalDamage = event.getDamage();
+        double origDamage = event.getDamage();
+        if (userState.armor > 0) {
+            finalDamage /= 3;
+            double damageToArmor = (event.getDamage() - finalDamage)*5;
+            userState.armor -= (int) damageToArmor;
+            if (userState.armor < 0) {
+                finalDamage += (Math.abs(userState.armor))/5d;
+                userState.armor = 0;
+            }
+            event.setDamage(finalDamage);
+            player.sendActionBar(MiniMessage.miniMessage().deserialize(
+                    String.format("Armor: <red>%d</red>", userState.armor)
+            ));
+
+            player.sendMessage("origDamage: "+origDamage);
+            player.sendMessage("finalDamage: "+finalDamage);
+            player.sendMessage("damageToArmor: "+damageToArmor);
+        }
+
+        double finalMaxHealth = player.getHealth() - finalDamage;
         if (finalMaxHealth < 20) finalMaxHealth = 20;
         player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(finalMaxHealth);
 
@@ -151,7 +171,10 @@ public class CombatListener implements Listener {
         ItemStack machinegun = new ItemStack(Material.CARROT_ON_A_STICK);
         ItemMeta mgMeta = machinegun.getItemMeta();
         mgMeta.setCustomModelData(0);
-        mgMeta.displayName(Component.text("Machinegun"));
+        mgMeta.displayName(
+                Component.text("Machinegun").
+                        decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.byBoolean(false))
+        );
         machinegun.setItemMeta(mgMeta);
 
         weaponState.ammo[WeaponType.MACHINEGUN] = WeaponUtil.DEFAULT_AMMO[WeaponType.MACHINEGUN];
@@ -171,7 +194,8 @@ public class CombatListener implements Listener {
         Player player = e.getPlayer();
         ItemStack handItem = player.getInventory().getItemInMainHand().clone();
         ItemMeta itemMeta = handItem.getItemMeta();
-        if (itemMeta.hasCustomModelData() && handItem.getType() == Material.CARROT_ON_A_STICK) {
+        plugin.userStates.get(player).armor = 0;
+        if (itemMeta != null && itemMeta.hasCustomModelData() && handItem.getType() == Material.CARROT_ON_A_STICK) {
             int modelData = itemMeta.getCustomModelData();
             WeaponUserState weaponState = plugin.userStates.get(player).weaponState;
             PersistentDataContainer pdc = itemMeta.getPersistentDataContainer();
@@ -191,7 +215,7 @@ public class CombatListener implements Listener {
 
         // Find the gun, regardless of its NBT/PDC
         Optional<ItemStack> foundGun = Arrays.stream(inv.getContents()).filter(Objects::nonNull).filter(
-                invItem -> invItem.getItemMeta().getCustomModelData() == modelData
+                invItem -> invItem.getItemMeta().hasCustomModelData() && invItem.getItemMeta().getCustomModelData() == modelData
         ).findAny();
 
         if (foundGun.isPresent()) {
@@ -245,6 +269,6 @@ public class CombatListener implements Listener {
         event.getView().getPlayer().sendMessage("§cYou can't put items into offhand!");
         ItemStack cursorItem = event.getCursor().clone();
         event.setCancelled(true);
-        event.getView().getPlayer().getInventory().addItem(cursorItem);
+//        event.getView().getPlayer().getInventory().addItem(cursorItem);
     }
 }
