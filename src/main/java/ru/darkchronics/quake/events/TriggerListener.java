@@ -15,6 +15,8 @@ import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.game.entities.*;
 import ru.darkchronics.quake.game.entities.pickups.Spawner;
 
+import java.util.ArrayList;
+
 public class TriggerListener implements Listener {
     private final QuakePlugin plugin;
 
@@ -24,7 +26,9 @@ public class TriggerListener implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
-        for (Trigger trigger : this.plugin.triggers) {
+        for (int i = 0; i < this.plugin.triggers.size(); i++) {
+            Trigger trigger = this.plugin.triggers.get(i);
+
             Location triggerLoc = trigger.getLocation();
             if (trigger.isDead()) {
                 Bukkit.getLogger().warning(String.format("Removing dead trigger %s at %.1f %.1f %.1f", trigger.getClass().getTypeName(), triggerLoc.x(), triggerLoc.y(), triggerLoc.z()));
@@ -41,7 +45,7 @@ public class TriggerListener implements Listener {
             Vector triggerMax = triggerLoc.toVector().add(bb.getMax());
             BoundingBox absoluteBb = BoundingBox.of(triggerMin, triggerMax);
 
-            if (absoluteBb.overlaps(player.getBoundingBox())) {
+            if (absoluteBb.overlaps(player.getBoundingBox()) && !player.isDead() && player.getGameMode() != GameMode.SPECTATOR) {
                 trigger.onTrigger(player);
             }
         }
@@ -57,15 +61,19 @@ public class TriggerListener implements Listener {
 
     @EventHandler
     public void onEntityRemove(EntityRemoveFromWorldEvent event) {
-        for (Trigger trigger : this.plugin.triggers) {
+        Trigger toRemove = null;
+
+        for (int i = 0; i < this.plugin.triggers.size(); i++) {
+            Trigger trigger = this.plugin.triggers.get(i);
             if (event.getEntity() != trigger.getEntity()) continue;
 
-            if (trigger instanceof Spawner spawner) {
-                spawner.respawn();
-            }
+            if (trigger instanceof Spawner spawner) spawner.respawn();
 
-            this.plugin.triggers.remove(trigger);
-            return;
+            toRemove = trigger;
+            break;
         }
+
+        if (toRemove != null)
+            this.plugin.triggers.remove(toRemove);
     }
 }

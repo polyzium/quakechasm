@@ -6,6 +6,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import ru.darkchronics.quake.QuakePlugin;
+import ru.darkchronics.quake.game.combat.powerup.Powerup;
+import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 
 import java.util.Arrays;
 
@@ -37,7 +39,6 @@ public class WeaponUserState {
         if (customModelData >= WEAPONS_NUM) return;
         // ...unless you have no ammo
         if (ammo[customModelData] <= 0) {
-            player.sendActionBar(MiniMessage.miniMessage().deserialize("<red>OUT OF AMMO</red>"));
             player.playSound(player, "quake.weapons.no_ammo", 0.5f, 1f);
             return;
         }
@@ -67,25 +68,25 @@ public class WeaponUserState {
                     if (ammo[customModelData2] <= 0) return;
                     if (shooting && cooldowns[customModelData2] == 0) {
                         switch (customModelData2) {
-                            case 0: // Machinegun
+                            case WeaponType.MACHINEGUN:
                                 WeaponUtil.fireMachinegun(player);
                                 break;
-                            case 1: // Shotgun
+                            case WeaponType.SHOTGUN:
                                 WeaponUtil.fireShotgun(player);
                                 break;
-                            case 2: // Rocket Launcher
+                            case WeaponType.ROCKET_LAUNCHER:
                                 WeaponUtil.fireRocket(player);
                                 break;
-                            case 3: // Lightning Gun
+                            case WeaponType.LIGHTNING_GUN:
                                 WeaponUtil.fireLightning(player, justStartedShooting);
                                 break;
-                            case 4: // Railgun
+                            case WeaponType.RAILGUN:
                                 WeaponUtil.fireRailgun(player);
                                 break;
-                            case 5: // Plasma Gun
+                            case WeaponType.PLASMA_GUN:
                                 WeaponUtil.firePlasma(player);
                                 break;
-                            case 6: // BFG
+                            case WeaponType.BFG:
                                 WeaponUtil.fireBFG(player);
                                 break;
                             default:
@@ -93,11 +94,16 @@ public class WeaponUserState {
                                 cancel();
                                 return;
                         }
+                        boolean hasQuad = Powerup.hasPowerup(player, PowerupType.QUAD_DAMAGE);
+                        boolean isLightningOrBFG = customModelData2 != WeaponType.LIGHTNING_GUN && customModelData2 != WeaponType.BFG;
+                        if (
+                                (hasQuad && isLightningOrBFG) ||
+                                        (hasQuad && customModelData2 == WeaponType.LIGHTNING_GUN && justStartedShooting)
+                        )
+                            player.getWorld().playSound(player, "quake.items.powerups.quad_damage.fire", 0.5f, 1f);
+
                         justStartedShooting = false;
                         ammo[customModelData2] -= 1;
-                        player.sendActionBar(MiniMessage.miniMessage().deserialize(
-                                String.format("Ammo: <green>%d</green>", ammo[customModelData2])
-                        ));
 
                         cooldowns[customModelData2]++;
                     }

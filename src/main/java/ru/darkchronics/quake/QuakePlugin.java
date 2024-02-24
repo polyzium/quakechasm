@@ -1,8 +1,5 @@
 package ru.darkchronics.quake;
 
-import dev.jorel.commandapi.CommandAPI;
-import dev.jorel.commandapi.CommandAPIBukkitConfig;
-import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
@@ -10,6 +7,7 @@ import org.bukkit.entity.*;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.joml.Matrix4d;
 import org.joml.Matrix4f;
 import ru.darkchronics.quake.commands.Commands;
@@ -26,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class QuakePlugin extends JavaPlugin {
-
+    public static QuakePlugin INSTANCE;
     public ArrayList<Trigger> triggers;
     public Map<Player,QuakeUserState> userStates;
     public ArrayList<Location> spawnpoints;
@@ -61,6 +59,18 @@ public class QuakePlugin extends JavaPlugin {
         rotator.runTaskTimer(this, 0, 20);
     }
 
+    public void startHudUpdater() {
+       new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player player : userStates.keySet()) {
+                    QuakeUserState userState = userStates.get(player);
+                    userState.hud.draw(userState);
+                }
+            }
+        }.runTaskTimer(this, 0, 1);
+    }
+
     public void loadTrigger(Entity entity) {
         String entityType = QEntityUtil.getEntityType(entity);
         switch (entityType) {
@@ -75,6 +85,9 @@ public class QuakePlugin extends JavaPlugin {
                 break;
             case "ammo_spawner":
                 new AmmoSpawner((ItemDisplay) entity, this);
+                break;
+            case "powerup_spawner":
+                new PowerupSpawner((ItemDisplay) entity, this);
                 break;
             case "jumppad":
                 new Jumppad((Marker) entity, this);
@@ -102,7 +115,7 @@ public class QuakePlugin extends JavaPlugin {
     public void initPlayer(Player player) {
         player.setWalkSpeed(0.4f);
         player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(20);
-        this.userStates.put(player, new QuakeUserState(this, player));
+        this.userStates.put(player, new QuakeUserState(player));
     }
 
     public void instantiateStates() {
@@ -152,6 +165,10 @@ public class QuakePlugin extends JavaPlugin {
         getLogger().info("Loading triggers");
         this.loadTriggers();
         this.startRotatingPickups();
+        this.startHudUpdater();
+        
+        // singleton pattern
+        INSTANCE = this;
     }
 
     @Override

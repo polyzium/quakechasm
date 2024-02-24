@@ -14,6 +14,7 @@ import org.bukkit.scheduler.BukkitTask;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
+import ru.darkchronics.quake.hud.Hud;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -78,7 +79,9 @@ public class ArmorSpawner extends Spawner {
         this.itemForRespawn = this.display.getItemStack();
 
         userState.armor += this.armor;
-        userState.startArmorDecreaser();
+        if (userState.armor > 200) userState.armor = 200;
+        if (userState.armor > 100)
+            userState.startArmorDecreaser();
 
         this.display.setItemStack(new ItemStack(Material.AIR)); // Make invisible
         if (this.armor == 5) {
@@ -86,7 +89,7 @@ public class ArmorSpawner extends Spawner {
         } else {
             player.getWorld().playSound(player, "quake.items.armor.pickup", 0.5f, 1f);
         }
-        player.sendActionBar(Component.text(NAMES.get(this.armor)));
+        Hud.pickupMessage(player, Component.text(NAMES.get(this.armor)));
 
         // Respawn in 25 seconds
         this.respawnTask = new BukkitRunnable() {

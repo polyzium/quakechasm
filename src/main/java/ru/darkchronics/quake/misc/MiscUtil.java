@@ -4,6 +4,7 @@ import org.bukkit.*;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public abstract class MiscUtil {
     public static final double GRAVITY = 0.08;
@@ -38,5 +39,13 @@ public abstract class MiscUtil {
         }
 
         return trajectory;
+    }
+
+    public static String[] getEnumNames(Class<? extends Enum<?>> e) {
+        return Arrays.stream(e.getEnumConstants()).map(Enum::name).toArray(String[]::new);
+    }
+
+    public static String[] getEnumNamesLowercase(Class<? extends Enum<?>> e) {
+        return Arrays.stream(e.getEnumConstants()).map(Enum::name).map(String::toLowerCase).toArray(String[]::new);
     }
 }

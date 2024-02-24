@@ -24,15 +24,14 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
-import ru.darkchronics.quake.game.combat.ProjectileUtil;
-import ru.darkchronics.quake.game.combat.WeaponType;
-import ru.darkchronics.quake.game.combat.WeaponUserState;
-import ru.darkchronics.quake.game.combat.WeaponUtil;
+import ru.darkchronics.quake.game.combat.*;
+import ru.darkchronics.quake.game.combat.powerup.Powerup;
+import ru.darkchronics.quake.game.combat.powerup.PowerupType;
+import ru.darkchronics.quake.hud.Hud;
+import ru.darkchronics.quake.hud.PowerupBoard;
 import ru.darkchronics.quake.misc.MiscUtil;
 
 import java.util.*;
-
-import static org.bukkit.craftbukkit.v1_20_R3.inventory.CraftItemStack.getItemMeta;
 
 public class CombatListener implements Listener {
     private final QuakePlugin plugin;
@@ -75,25 +74,66 @@ public class CombatListener implements Listener {
         event.setCancelled(true);
     }
 
-    // Handle 20+ health (for things like Mega Health or Regeneration)
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
-        // Play hit sound
+        // Contain player state for later use (if it's a player)
+        QuakeUserState userState = null;
+        if (event.getEntity() instanceof Player player)
+            userState = QuakePlugin.INSTANCE.userStates.get(player);
+
+        // Extinguish fires
+        if (event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK) {
+            event.getEntity().setFireTicks(0);
+            event.setCancelled(true);
+            return;
+        }
+
+        // Special cases for EntityDamageByEntityEvent
         if (
                 event instanceof EntityDamageByEntityEvent attackEvent &&
-                        event.getEntity() instanceof LivingEntity victim &&
-                        event.getEntity() != attackEvent.getDamager()
+                        event.getEntity() instanceof LivingEntity victim
         ) {
             Entity attacker = attackEvent.getDamager();
-            float health = (float) (victim.getHealth() - event.getDamage());
-            attacker.playSound(
-                    Sound.sound(Key.key("quake.feedback.hit"),
-                            Sound.Source.NEUTRAL,
-                            1f,
-                            (float) Math.round((1f + (health / 66)) * 6) /6
-                    )
-            );
+
+            // If the attacker has quad, triple the damage
+            if (
+                    attacker instanceof Player pAttacker &&
+                            Powerup.hasPowerup(pAttacker, PowerupType.QUAD_DAMAGE)
+            ) event.setDamage(event.getDamage() * 3);
+
+            if (event.getEntity() != attackEvent.getDamager()) {
+                // Play hit sound
+                float health = (float) (victim.getHealth() - event.getDamage());
+                attacker.playSound(
+                        Sound.sound(Key.key("quake.feedback.hit"),
+                                Sound.Source.NEUTRAL,
+                                1f,
+                                (float) Math.round((1f + (health / 66)) * 6) / 6
+                        )
+                );
+            }
         }
+
+        // If a player has protection powerup, deny any lava and explosion damage
+        if (
+                event.getEntity() instanceof Player player &&
+                Powerup.hasPowerup(player, PowerupType.PROTECTION)
+        ) {
+            if (
+                    event.getCause() == EntityDamageEvent.DamageCause.LAVA ||
+                    userState.lastDamageCause == DamageCause.ROCKET_SPLASH ||
+                    userState.lastDamageCause == DamageCause.BFG_SPLASH
+            ) {
+                event.setCancelled(true);
+                return;
+            } else {
+                event.setDamage(event.getDamage()/2d);
+            }
+        }
+
+        // Kill the player if they receive any void damage
+        if (event.getCause() == EntityDamageEvent.DamageCause.VOID)
+            event.setDamage(1000);
 
         if (
                 event.getEntity().getType() != EntityType.PLAYER ||
@@ -102,11 +142,9 @@ public class CombatListener implements Listener {
         ) return;
 
         Player player = (Player) event.getEntity();
-        QuakeUserState userState = this.plugin.userStates.get(player);
 
         // Calculate armor factor
         double finalDamage = event.getDamage();
-        double origDamage = event.getDamage();
         if (userState.armor > 0) {
             finalDamage /= 3;
             double damageToArmor = (event.getDamage() - finalDamage)*5;
@@ -116,23 +154,11 @@ public class CombatListener implements Listener {
                 userState.armor = 0;
             }
             event.setDamage(finalDamage);
-            player.sendActionBar(MiniMessage.miniMessage().deserialize(
-                    String.format("Armor: <red>%d</red>", userState.armor)
-            ));
-
-            player.sendMessage("origDamage: "+origDamage);
-            player.sendMessage("finalDamage: "+finalDamage);
-            player.sendMessage("damageToArmor: "+damageToArmor);
         }
 
         double finalMaxHealth = player.getHealth() - finalDamage;
         if (finalMaxHealth < 20) finalMaxHealth = 20;
         player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(finalMaxHealth);
-
-        // Display health in a scale of 5:1 (20 Minecraft HP = 10 hearts = 100 classic HP)
-//        player.sendMessage(String.valueOf(
-//                (player.getHealth()-event.getDamage())*5
-//        ));
     }
 
     // No hunger
@@ -161,8 +187,8 @@ public class CombatListener implements Listener {
         Location spawnPoint = this.plugin.spawnpoints.get(
                 (int) (Math.random() * (this.plugin.spawnpoints.size() - 1))
         );
-//        spawnPoint.setX(spawnPoint.x()+0.5);
-//        spawnPoint.setZ(spawnPoint.z()+0.5);
+        spawnPoint.setX(spawnPoint.x()+0.5);
+        spawnPoint.setZ(spawnPoint.z()+0.5);
 
         // Clear all ammo
         WeaponUserState weaponState = this.plugin.userStates.get(event.getPlayer()).weaponState;
@@ -182,13 +208,18 @@ public class CombatListener implements Listener {
         event.getPlayer().getInventory().addItem(machinegun);
         event.setRespawnLocation(spawnPoint);
 
-        event.getPlayer().getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(20);
+        // Set health to 125 Quake HP
+        event.getPlayer().getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(25);
+        event.getPlayer().setHealth(25);
+        this.plugin.userStates.get(event.getPlayer()).startHealthDecreaser();
 
         spawnPoint.getWorld().playSound(spawnPoint, "quake.world.tele_in", 1, 1);
         MiscUtil.teleEffect(spawnPoint);
+
+        event.getPlayer().getInventory().setHeldItemSlot(0);
     }
 
-    // No inventory drop
+    // No inventory drop + drop powerups
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent e) {
         Player player = e.getPlayer();
@@ -202,6 +233,8 @@ public class CombatListener implements Listener {
             pdc.set(new NamespacedKey("darkchronics-quake", "ammo"), PersistentDataType.INTEGER, weaponState.ammo[modelData]);
             handItem.setItemMeta(itemMeta);
         }
+
+        Powerup.dropPowerups(player);
 
         Collection<ItemStack> drops = e.getDrops();
         drops.clear();
@@ -218,10 +251,9 @@ public class CombatListener implements Listener {
                 invItem -> invItem.getItemMeta().hasCustomModelData() && invItem.getItemMeta().getCustomModelData() == modelData
         ).findAny();
 
+        PersistentDataContainer pdc = gunItem.getItemMeta().getPersistentDataContainer();
+        Integer ammo = pdc.get(new NamespacedKey("darkchronics-quake", "ammo"), PersistentDataType.INTEGER);
         if (foundGun.isPresent()) {
-            PersistentDataContainer pdc = gunItem.getItemMeta().getPersistentDataContainer();
-            Integer ammo = pdc.get(new NamespacedKey("darkchronics-quake", "ammo"), PersistentDataType.INTEGER);
-
             if (ammo != null) {
                 weaponState.ammo[modelData] += ammo;
             } else {
@@ -231,13 +263,21 @@ public class CombatListener implements Listener {
                     weaponState.ammo[modelData] += 1;
             }
         } else {
-            if (weaponState.ammo[modelData] < WeaponUtil.DEFAULT_AMMO[modelData])
-                weaponState.ammo[modelData] = WeaponUtil.DEFAULT_AMMO[modelData];
-            else
-                weaponState.ammo[modelData] += 1;
+            if (ammo != null && ammo > WeaponUtil.DEFAULT_AMMO[modelData]) {
+                weaponState.ammo[modelData] += ammo;
+            } else {
+                if (weaponState.ammo[modelData] < WeaponUtil.DEFAULT_AMMO[modelData])
+                    weaponState.ammo[modelData] = WeaponUtil.DEFAULT_AMMO[modelData];
+                else
+                    weaponState.ammo[modelData] += 1;
+            }
+
             inv.setItem(modelData, gunItem);
             inv.setHeldItemSlot(modelData);
         }
+
+        if (weaponState.ammo[modelData] > 200)
+            weaponState.ammo[modelData] = 200;
     }
 
     // Sort picked up gun
@@ -250,7 +290,7 @@ public class CombatListener implements Listener {
         sortGun(item, player, this.plugin);
         event.getItem().remove();
         player.playSound(entity, "quake.weapons.pickup", 0.5f,  1f);
-        entity.sendActionBar(item.displayName());
+        Hud.pickupMessage(player, item.getItemMeta().displayName());
         event.setCancelled(true);
     }
 

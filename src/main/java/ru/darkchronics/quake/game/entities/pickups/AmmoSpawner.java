@@ -13,7 +13,9 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import ru.darkchronics.quake.QuakePlugin;
+import ru.darkchronics.quake.game.combat.WeaponUserState;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
+import ru.darkchronics.quake.hud.Hud;
 
 public class AmmoSpawner extends Spawner {
     public static final int[] AMOUNTS = {
@@ -77,14 +79,17 @@ public class AmmoSpawner extends Spawner {
 
     @Override
     public void onPickup(Player player) {
-        if (this.display.getItemStack().isEmpty()) return;
+        WeaponUserState weaponState = plugin.userStates.get(player).weaponState;
+        if (this.display.getItemStack().isEmpty() || weaponState.ammo[ammoType] >= 200) return;
 
         this.itemForRespawn = this.display.getItemStack();
-        plugin.userStates.get(player).weaponState.ammo[ammoType] += AMOUNTS[ammoType];
+        weaponState.ammo[ammoType] += AMOUNTS[ammoType];
+        if (weaponState.ammo[ammoType] > 200)
+            weaponState.ammo[ammoType] = 200;
 
         this.display.setItemStack(new ItemStack(Material.AIR)); // Make invisible
         player.getWorld().playSound(player, "quake.items.ammo.pickup", 0.5f, 1f);
-        player.sendActionBar(Component.text(NAMES[ammoType]));
+        Hud.pickupMessage(player, Component.text(NAMES[ammoType]));
 
         // Respawn in 40 seconds
         this.respawnTask = new BukkitRunnable() {

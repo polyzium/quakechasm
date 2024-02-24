@@ -8,6 +8,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
+import ru.darkchronics.quake.QuakePlugin;
+import ru.darkchronics.quake.game.combat.powerup.Powerup;
+import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 
 import java.util.function.BiConsumer;
 
@@ -36,6 +40,12 @@ public abstract class WeaponUtil {
 
     public static int WEAPONS_NUM = 7;
 
+    public static int getHoldingWeaponIndex(Player player) {
+        if (player.getInventory().getItemInMainHand().getItemMeta() == null) return -1;
+        if (!player.getInventory().getItemInMainHand().getItemMeta().hasCustomModelData()) return -1;
+        return player.getInventory().getItemInMainHand().getItemMeta().getCustomModelData();
+    }
+
     private static void applySpread(Vector vector, double spread) {
         // Generate a random angle within the spread range
         double horizontalAngle = Math.toRadians(Math.random() * spread - spread / 2);
@@ -54,21 +64,20 @@ public abstract class WeaponUtil {
     }
 
     public static RayTraceResult cast(Player player, double spread, double limit) {
-        Location loc = player.getLocation();
-        Vector look = player.getEyeLocation().getDirection();
+        Location loc = player.getEyeLocation();
+        Vector look = loc.getDirection();
 
         applySpread(look, spread);
 
-        loc.setY(loc.y() + player.getHeight()-0.1);
-
-        return player.getWorld().rayTrace(loc, look, limit, FluidCollisionMode.NEVER, true, 0.1, e -> (e != player && (e instanceof LivingEntity)));
+        return player.getWorld().rayTrace(loc, look, limit, FluidCollisionMode.NEVER, true, 0.1, e -> (
+                (e != player && (e instanceof LivingEntity))
+        ));
     }
 
     public static void spawnParticlesLine(Location startLocation, Location endLocation, Particle particle) {
         World world = startLocation.getWorld();
         double density = 4;
 
-        Vector direction = endLocation.toVector().subtract(startLocation.toVector()).normalize();
         double distance = startLocation.distance(endLocation);
         int particleCount = (int) (distance * density);
 
@@ -87,7 +96,6 @@ public abstract class WeaponUtil {
         World world = startLocation.getWorld();
         double density = 4;
 
-        Vector direction = endLocation.toVector().subtract(startLocation.toVector()).normalize();
         double distance = startLocation.distance(endLocation);
         int particleCount = (int) (distance * density);
 
@@ -127,9 +135,15 @@ public abstract class WeaponUtil {
         loc.getWorld().playSound(loc, "quake.weapons.impact_energy", 0.5f, 1);
     }
 
-    public static RayTraceResult fireHitscan(Player player, double damage, double spread, double limit, BiConsumer<Location, Block> impact) {
+    public static RayTraceResult fireHitscan(Player player, double damage, double spread, double limit, DamageCause cause, BiConsumer<Location, Block> impact) {
         RayTraceResult ray = cast(player, spread, limit);
-        if (ray == null) return null;
+        if (ray == null) {
+            Location eyeLocation = player.getEyeLocation().clone();
+            Vector look = eyeLocation.getDirection().clone().multiply(limit);
+            Vector hitPos = eyeLocation.toVector().clone().add(look);
+
+            return new RayTraceResult(hitPos);
+        }
 
         Block hitBlock = ray.getHitBlock();
         Vector hitPos = ray.getHitPosition();
@@ -140,8 +154,7 @@ public abstract class WeaponUtil {
 
         Entity entity = ray.getHitEntity();
         if (entity instanceof LivingEntity livingEntity) {
-            livingEntity.setNoDamageTicks(0);
-            livingEntity.damage(damage, player);
+            damageCustom(livingEntity, damage, player, cause);
         } else if (entity instanceof EnderCrystal crystal) {
             Location cloc = crystal.getLocation();
             crystal.remove();
@@ -155,6 +168,17 @@ public abstract class WeaponUtil {
         return ray;
     }
 
+    public static void damageCustom(LivingEntity victim, double amount, Entity attacker, DamageCause cause) {
+        if (cause == null)
+            cause = DamageCause.UNKNOWN;
+
+        if (victim instanceof Player player)
+            QuakePlugin.INSTANCE.userStates.get(player).lastDamageCause = cause;
+
+        victim.setNoDamageTicks(0);
+        victim.damage(amount, attacker);
+    }
+
     public static void knockback(Location from, Entity victim, double power) {
         victim.setVelocity(victim.getVelocity().add(from.getDirection().multiply(power)));
     }
@@ -163,7 +187,7 @@ public abstract class WeaponUtil {
     public static void fireMachinegun(Player player) {
 //        player.getWorld().playSound(player, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 0.5f, 0.5f);
         player.getWorld().playSound(player, "quake.weapons.machinegun.fire", 0.5f, 1);
-        fireHitscan(player, 1.4, 2, 256, WeaponUtil::bulletImpact);
+        fireHitscan(player, 1.4, 2, 256, DamageCause.MACHINEGUN, WeaponUtil::bulletImpact);
     }
 
     public static void fireShotgun(Player player) {
@@ -171,7 +195,7 @@ public abstract class WeaponUtil {
 //        player.getWorld().playSound(player, Sound.ENTITY_GENERIC_EXPLODE, 0.25f, 2f);
         player.getWorld().playSound(player, "quake.weapons.shotgun.fire", 0.5f, 1);
         for (int i = 0; i < 11; i++) {
-            fireHitscan(player, 2, 8, 256, WeaponUtil::bulletImpact);
+            fireHitscan(player, 2, 8, 256, DamageCause.SHOTGUN, WeaponUtil::bulletImpact);
         }
     }
 
@@ -227,7 +251,7 @@ public abstract class WeaponUtil {
     public static void fireLightning(Player player, boolean emitSound) {
         if (emitSound)
             player.getWorld().playSound(player, "quake.weapons.lightning_gun.fire", 0.5f, 1);
-        RayTraceResult ray = fireHitscan(player, 1.6, 0, 16, WeaponUtil::lightningImpact);
+        RayTraceResult ray = fireHitscan(player, 1.6, 0, 16, DamageCause.LIGHTNING, WeaponUtil::lightningImpact);
         if (ray == null) return;
         if (ray.getHitEntity() != null) {
             Entity victim = ray.getHitEntity();
@@ -294,7 +318,7 @@ public abstract class WeaponUtil {
 //        player.getWorld().playSound(player, Sound.BLOCK_BEACON_DEACTIVATE, 0.5f, 1f);
 //        player.getWorld().playSound(player, Sound.BLOCK_BEACON_ACTIVATE, 0.5f, 1f);
         player.getWorld().playSound(player, "quake.weapons.railgun.fire", 0.5f, 1);
-        RayTraceResult ray = fireHitscan(player, 20, 0, 256, WeaponUtil::railImpact);
+        RayTraceResult ray = fireHitscan(player, 20, 0, 256, DamageCause.RAILGUN, WeaponUtil::railImpact);
         if (ray == null) return;
         if (ray.getHitEntity() != null) {
             Entity victim = ray.getHitEntity();
@@ -323,8 +347,10 @@ public abstract class WeaponUtil {
             @Override
             public void run() {
                 fireBFGGuts(player);
+                if (Powerup.hasPowerup(player, PowerupType.QUAD_DAMAGE))
+                    player.getWorld().playSound(player, "quake.items.powerups.quad_damage.fire", 0.5f, 1f);
             }
-        }.runTaskLater(Bukkit.getPluginManager().getPlugin("DarkChronics-Quake"), 16);
+        }.runTaskLater(QuakePlugin.INSTANCE, 18);
     }
 
     private static void fireBFGGuts(Player player) {
@@ -378,8 +404,7 @@ public abstract class WeaponUtil {
                         if (!(entity instanceof LivingEntity) || entity == player) continue;
 
                         LivingEntity livingEntity = (LivingEntity) entity;
-                        livingEntity.setNoDamageTicks(0);
-                        livingEntity.damage(1, player);
+                        damageCustom(livingEntity, 1, player, DamageCause.BFG_RAY);
                         spawnParticlesLine(ploc, livingEntity.getEyeLocation(), Particle.ELECTRIC_SPARK);
                         livingEntity.getWorld().playSound(livingEntity.getLocation(), "quake.weapons.bfg.laser", 0.5f, 1);
                     }

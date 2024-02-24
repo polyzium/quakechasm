@@ -1,28 +1,38 @@
 package ru.darkchronics.quake;
 
+import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
+import ru.darkchronics.quake.game.combat.DamageCause;
 import ru.darkchronics.quake.game.combat.WeaponUserState;
+import ru.darkchronics.quake.game.combat.powerup.Powerup;
+import ru.darkchronics.quake.game.combat.powerup.PowerupType;
+import ru.darkchronics.quake.hud.Hud;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.util.ArrayList;
 
 public class QuakeUserState {
     private Player player;
-    public QuakePlugin plugin;
     public WeaponUserState weaponState;
     public Location portalLoc = null;
     public BukkitRunnable healthDecreaser;
     public BukkitRunnable armorDecreaser;
     public int armor = 0;
+    public ArrayList<Powerup> activePowerups = new ArrayList<>(3);
+    public Hud hud;
+    public DamageCause lastDamageCause;
 
-    public QuakeUserState(QuakePlugin plugin, Player player) {
-        this.plugin = plugin;
+    public QuakeUserState(Player player) {
         this.player = player;
-        this.weaponState = new WeaponUserState(plugin);
+        this.weaponState = new WeaponUserState(QuakePlugin.INSTANCE);
+        this.hud = new Hud(this);
+    }
+
+    public Player getPlayer() {
+        return player;
     }
 
     public void startArmorDecreaser() {
@@ -32,7 +42,6 @@ public class QuakeUserState {
             @Override
             public void run() {
                 if (armor <= 100) {
-                    armor = 100;
                     this.cancel();
                     armorDecreaser = null;
                     return;
@@ -40,7 +49,7 @@ public class QuakeUserState {
                 armor -= 1;
             }
         };
-        armorDecreaser.runTaskTimer(this.plugin, 20, 20);
+        armorDecreaser.runTaskTimer(QuakePlugin.INSTANCE, 20, 20);
     }
 
     public void startHealthDecreaser() {
@@ -49,6 +58,8 @@ public class QuakeUserState {
         this.healthDecreaser = new BukkitRunnable() {
             @Override
             public void run() {
+                if (Powerup.hasPowerup(player, PowerupType.REGENERATION)) return;
+
                 double currentHealth = player.getHealth();
                 if (currentHealth <= 20) {
                     player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(20);
@@ -61,6 +72,6 @@ public class QuakeUserState {
                 player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(newHealth);
             }
         };
-        healthDecreaser.runTaskTimer(this.plugin, 20, 20);
+        healthDecreaser.runTaskTimer(QuakePlugin.INSTANCE, 20, 20);
     }
 }

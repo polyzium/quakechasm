@@ -10,6 +10,7 @@ import org.bukkit.scheduler.BukkitTask;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.events.CombatListener;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
+import ru.darkchronics.quake.hud.Hud;
 
 import java.util.Objects;
 
@@ -45,7 +46,7 @@ public class ItemSpawner extends Spawner {
         }
         super.display.setItemStack(new ItemStack(Material.AIR)); // Make invisible
         player.getWorld().playSound(player, "quake.weapons.pickup", 0.5f, 1f);
-        player.sendActionBar(Objects.requireNonNull(item.getItemMeta().displayName()));
+        Hud.pickupMessage(player, Objects.requireNonNull(item.getItemMeta().displayName()));
 
         // Respawn in 5 seconds
         // TODO 30 seconds for Team Deathmatch

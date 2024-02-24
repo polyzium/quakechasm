@@ -5,6 +5,9 @@ import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.DoubleArgument;
 import dev.jorel.commandapi.arguments.LocationArgument;
 import dev.jorel.commandapi.arguments.StringArgument;
+import ru.darkchronics.fastboard.adventure.FastBoard;
+import joptsimple.internal.Strings;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -15,12 +18,11 @@ import org.bukkit.util.Vector;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
 import ru.darkchronics.quake.game.combat.WeaponUtil;
+import ru.darkchronics.quake.game.combat.powerup.Powerup;
+import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
 import ru.darkchronics.quake.game.entities.Trigger;
-import ru.darkchronics.quake.game.entities.pickups.AmmoSpawner;
-import ru.darkchronics.quake.game.entities.pickups.ArmorSpawner;
-import ru.darkchronics.quake.game.entities.pickups.HealthSpawner;
-import ru.darkchronics.quake.game.entities.pickups.ItemSpawner;
+import ru.darkchronics.quake.game.entities.pickups.*;
 import ru.darkchronics.quake.game.entities.triggers.Jumppad;
 import ru.darkchronics.quake.game.entities.triggers.Portal;
 import ru.darkchronics.quake.misc.MiscUtil;
@@ -280,6 +282,35 @@ public abstract class Commands {
                         })
                 );
 
+        CommandAPICommand powerupSpawnerCmd = new CommandAPICommand("powerupspawner")
+                .withSubcommand(new CommandAPICommand("create")
+                        .withArguments(
+                                new StringArgument("type")
+                                        .includeSuggestions(ArgumentSuggestions.strings(
+                                                MiscUtil.getEnumNamesLowercase(PowerupType.class)
+                                        ))
+                        )
+                        .executesPlayer((player, args) -> {
+                            Location loc = player.getLocation();
+                            loc.set(
+                                    Math.floor(loc.x())+0.5,
+                                    loc.y() + 1,
+                                    Math.floor(loc.z())+0.5
+                            );
+
+                            PowerupType type;
+                            try {
+                                type = PowerupType.valueOf(((String) args.get("type")).toUpperCase());
+                            } catch (IllegalArgumentException e) {
+                                player.sendMessage("§cWrong powerup type, use either of: "+ Strings.join(MiscUtil.getEnumNamesLowercase(PowerupType.class), ", "));
+                                return;
+                            }
+
+                            new PowerupSpawner(type, player.getWorld(), loc, false, 30, plugin);
+                            player.sendMessage(String.format("Made a PowerupSpawner at %.1f %.1f %.1f", loc.x(), loc.y(), loc.z()));
+                        })
+                );
+
         CommandAPICommand itemSpawnerCmd = new CommandAPICommand("itemspawner")
                 .withSubcommand(new CommandAPICommand("create"))
                 .executesPlayer((player, args) -> {
@@ -319,6 +350,43 @@ public abstract class Commands {
                     );
                 });
 
+        CommandAPICommand giveCmd = new CommandAPICommand("give")
+                .withArguments(new StringArgument("what").includeSuggestions(ArgumentSuggestions.strings("ammo", "quad", "protection", "regeneration")))
+                .executesPlayer((player, args) -> {
+                    String giveWhat = (String) args.get("what");
+                    assert giveWhat != null;
+                    switch (giveWhat) {
+                        case "ammo":
+                            int[] ammo = QuakePlugin.INSTANCE.userStates.get(player).weaponState.ammo;
+                            for (int i = 0; i < WeaponUtil.WEAPONS_NUM; i++) ammo[i] = 999;
+                            break;
+                        case "quad":
+                            PowerupSpawner.doPowerup(player, PowerupType.QUAD_DAMAGE, 30);
+                            break;
+                        case "protection":
+                            PowerupSpawner.doPowerup(player, PowerupType.PROTECTION, 30);
+                            break;
+                        case "regeneration":
+                            PowerupSpawner.doPowerup(player, PowerupType.REGENERATION, 30);
+                            break;
+                        default:
+                            player.sendMessage("§cI don't know what is \""+giveWhat+ "\"!");
+                            break;
+                    }
+                });
+
+        CommandAPICommand test = new CommandAPICommand("test")
+                .executesPlayer((player, args) -> {
+//                    for (int i = 0; i < 25; i++) {
+//                        BossBar bar = BossBar.bossBar(Component.text("test"), 0, BossBar.Color.WHITE, BossBar.Overlay.PROGRESS);
+//                        player.showBossBar(bar);
+//                    }
+                    FastBoard board = new FastBoard(player);
+                    board.updateTitle(
+                            Component.text("30").color(TextColor.color(TextColor.color(0xff3f3f))).font(Key.key("hud"))
+                    );
+                });
+
         new CommandAPICommand("quake")
                 .withAliases("dcquake")
                 .withSubcommands(
@@ -326,10 +394,13 @@ public abstract class Commands {
                         healthSpawnerCmd,
                         ammoSpawnerCmd,
                         armorSpawnerCmd,
+                        powerupSpawnerCmd,
                         jumppadCmd,
                         portalCmd,
                         reloadCmd,
-                        reloadSpawnsCmd
+                        reloadSpawnsCmd,
+                        giveCmd,
+                        test
                 )
                 .register();
     }
