@@ -173,7 +173,7 @@ public abstract class WeaponUtil {
             cause = DamageCause.UNKNOWN;
 
         if (victim instanceof Player player)
-            QuakePlugin.INSTANCE.userStates.get(player).lastDamageCause = cause;
+            QuakePlugin.INSTANCE.userStates.get(player).setLastDamageCause(cause);
 
         victim.setNoDamageTicks(0);
         victim.damage(amount, attacker);

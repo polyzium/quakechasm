@@ -23,7 +23,7 @@ public class QuakeUserState {
     public int armor = 0;
     public ArrayList<Powerup> activePowerups = new ArrayList<>(3);
     public Hud hud;
-    public DamageCause lastDamageCause;
+    private DamageCause lastDamageCause;
 
     public QuakeUserState(Player player) {
         this.player = player;
@@ -73,5 +73,19 @@ public class QuakeUserState {
             }
         };
         healthDecreaser.runTaskTimer(QuakePlugin.INSTANCE, 20, 20);
+    }
+
+    public boolean isCustomDamage() {
+        return lastDamageCause != null;
+    }
+
+    public DamageCause getLastDamageCause() {
+        DamageCause t = lastDamageCause;
+        lastDamageCause = null;
+        return t;
+    }
+
+    public void setLastDamageCause(DamageCause lastDamageCause) {
+        this.lastDamageCause = lastDamageCause;
     }
 }
