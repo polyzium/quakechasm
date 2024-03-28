@@ -1,10 +1,18 @@
 package ru.darkchronics.quake.commands;
 
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.IncompleteRegionException;
+import com.sk89q.worldedit.LocalSession;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.bukkit.BukkitPlayer;
+import com.sk89q.worldedit.bukkit.WorldEditPlugin;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
 import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.DoubleArgument;
-import dev.jorel.commandapi.arguments.LocationArgument;
-import dev.jorel.commandapi.arguments.StringArgument;
+import dev.jorel.commandapi.arguments.*;
+import org.apache.commons.lang.StringUtils;
+import org.bukkit.util.BoundingBox;
 import ru.darkchronics.fastboard.adventure.FastBoard;
 import joptsimple.internal.Strings;
 import net.kyori.adventure.key.Key;
@@ -18,18 +26,27 @@ import org.bukkit.util.Vector;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
 import ru.darkchronics.quake.game.combat.WeaponUtil;
-import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
 import ru.darkchronics.quake.game.entities.Trigger;
 import ru.darkchronics.quake.game.entities.pickups.*;
 import ru.darkchronics.quake.game.entities.triggers.Jumppad;
 import ru.darkchronics.quake.game.entities.triggers.Portal;
+import ru.darkchronics.quake.hud.Hud;
+import ru.darkchronics.quake.matchmaking.CTFMatch;
+import ru.darkchronics.quake.matchmaking.Match;
+import ru.darkchronics.quake.matchmaking.MatchManager;
+import ru.darkchronics.quake.matchmaking.Team;
+import ru.darkchronics.quake.matchmaking.factory.*;
+import ru.darkchronics.quake.matchmaking.map.QMap;
+import ru.darkchronics.quake.matchmaking.map.Spawnpoint;
 import ru.darkchronics.quake.misc.MiscUtil;
 import ru.darkchronics.quake.misc.ParticleUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class Commands {
    
@@ -311,6 +328,33 @@ public abstract class Commands {
                         })
                 );
 
+        CommandAPICommand ctfFlagCmd = new CommandAPICommand("ctfflag")
+                .withSubcommand(new CommandAPICommand("create")
+                        .withArguments(
+                                new StringArgument("team")
+                                        .includeSuggestions(ArgumentSuggestions.strings("red", "blue"))
+                        )
+                        .executesPlayer((player, args) -> {
+                            Location loc = player.getLocation();
+                            loc.set(
+                                    Math.floor(loc.x())+0.5,
+                                    loc.y() + 1,
+                                    Math.floor(loc.z())+0.5
+                            );
+
+                            Team team;
+                            try {
+                                team = Team.valueOf(((String) args.get("team")).toUpperCase());
+                            } catch (IllegalArgumentException e) {
+                                player.sendMessage("§cWrong team, use either of: red, blue");
+                                return;
+                            }
+
+                            new CTFFlag(team, false, null, loc);
+                            player.sendMessage(String.format("Made a CTFFlag (%s team) at %.1f %.1f %.1f", team.name(), loc.x(), loc.y(), loc.z()));
+                        })
+                );
+
         CommandAPICommand itemSpawnerCmd = new CommandAPICommand("itemspawner")
                 .withSubcommand(new CommandAPICommand("create"))
                 .executesPlayer((player, args) -> {
@@ -331,12 +375,6 @@ public abstract class Commands {
                             plugin
                     );
                     player.sendMessage(String.format("Made an ItemSpawner at %.1f %.1f %.1f", loc.x(), loc.y(), loc.z()));
-                });
-
-        CommandAPICommand reloadSpawnsCmd = new CommandAPICommand("reloadSpawns")
-                .executes((sender, args) -> {
-                    plugin.scanSpawnpoints();
-                    sender.sendMessage("Spawnpoints reloaded");
                 });
 
         CommandAPICommand reloadCmd = new CommandAPICommand("reload")
@@ -375,16 +413,236 @@ public abstract class Commands {
                     }
                 });
 
+        CommandAPICommand mapCmd = new CommandAPICommand("map")
+                .withSubcommand(new CommandAPICommand("create")
+                        .withArguments(new StringArgument("name"))
+                        .executesPlayer((player, args) -> {
+                            World world = player.getWorld();
+                            BoundingBox bukkitSelection;
+                            try {
+                                WorldEditPlugin worldEditPlugin = (WorldEditPlugin) Bukkit.getPluginManager().getPlugin("WorldEdit");
+                                if (worldEditPlugin == null) {
+                                    player.sendMessage("§cWorldEdit is either not installed or loaded");
+                                    return;
+                                }
+                                Region selection = worldEditPlugin.getSession(player).getSelection(BukkitAdapter.adapt(world));
+                                BlockVector3 pos1 = selection.getBoundingBox().getPos1();
+                                BlockVector3 pos2 = selection.getBoundingBox().getPos2();
+                                Location bukkitPos1 = BukkitAdapter.adapt(world, pos1);
+                                Location bukkitPos2 = BukkitAdapter.adapt(world, pos2);
+
+                                bukkitSelection = BoundingBox.of(bukkitPos1, bukkitPos2);
+                            } catch (IncompleteRegionException e) {
+                                player.sendMessage("§cPlease select a WorldEdit region first");
+                                return;
+                            }
+
+                            ArrayList<Spawnpoint> spawnPoints = QuakePlugin.scanSpawnpointsIn(player.getWorld(), bukkitSelection);
+
+                            String name = (String) args.get("name");
+                            QMap qMap = new QMap(name, world, bukkitSelection, new ArrayList<>(spawnPoints));
+                            if (QuakePlugin.INSTANCE.maps == null)
+                                QuakePlugin.INSTANCE.maps = new ArrayList<>(8);
+
+                            if (QuakePlugin.INSTANCE.getMap(name) != null) {
+                                player.sendMessage("§cThere is already a map with that name");
+                                return;
+                            }
+
+                            for (Entity entity : player.getWorld().getNearbyEntities(qMap.bounds)) {
+                                for (Spawnpoint spawnPoint : spawnPoints) {
+                                    if (entity.getType() == EntityType.ARMOR_STAND && entity.getLocation().equals(spawnPoint.pos))
+                                        entity.remove();
+                                }
+                            }
+
+                            QuakePlugin.INSTANCE.maps.add(qMap);
+
+                            for (Spawnpoint spawnPoint : spawnPoints) {
+                                world.spawnParticle(Particle.SPELL_INSTANT, spawnPoint.pos, 64, 0.5, 0.5, 0.5);
+                                world.setBlockData(spawnPoint.pos, Material.AIR.createBlockData());
+                            }
+
+                            player.sendMessage("Map \""+name+"\" has been created");
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("remove")
+                        .withArguments(new StringArgument("mapName"))
+                        .executesPlayer((player, args) -> {
+                            String name = (String) args.get("mapName");
+                            QMap map = QuakePlugin.INSTANCE.getMap(name);
+                            if (map == null) {
+                                player.sendMessage("§cNo such map");
+                                return;
+                            }
+                            // Place spawnpoints
+                            for (Spawnpoint spawnPoint : map.spawnPoints) {
+                                QuakePlugin.placeSpawnpoint(spawnPoint);
+                                map.world.spawnParticle(Particle.REDSTONE, spawnPoint.pos, 64, 0.5, 0.5, 0.5, new Particle.DustOptions(Color.fromRGB(0xFF0000), 2));
+                            }
+
+                            // Do removal
+                            QuakePlugin.INSTANCE.maps.remove(map);
+                            player.sendMessage("Map \""+name+"\" removed");
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("list")
+                        .executes((sender, args) -> {
+                            for (QMap map : QuakePlugin.INSTANCE.maps) {
+                                sender.sendMessage(map.name+" in "+map.world.getName()+" at "+ map.bounds.getMin());
+                            }
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("select")
+                        .withArguments(new StringArgument("mapName"))
+                        .executesPlayer((player, args) -> {
+                            WorldEditPlugin worldEditPlugin = (WorldEditPlugin) Bukkit.getPluginManager().getPlugin("WorldEdit");
+                            if (worldEditPlugin == null) {
+                                player.sendMessage("§cWorldEdit is either not installed or loaded");
+                                return;
+                            }
+
+                            String name = (String) args.get("mapName");
+                            QMap map = QuakePlugin.INSTANCE.getMap(name);
+                            if (map == null) {
+                                player.sendMessage("§cNo such map");
+                                return;
+                            }
+//                            try {
+                                // This does not work
+//                                Region selection = worldEditPlugin.getSession(player).getSelection();
+//                                CuboidRegion cuboidRegion = new CuboidRegion(
+//                                        BukkitAdapter.adapt(player.getWorld()),
+//                                        BukkitAdapter.adapt(map.bounds.getMin().clone().toLocation(player.getWorld())).toVector().toBlockPoint(),
+//                                        BukkitAdapter.adapt(map.bounds.getMax().clone().toLocation(player.getWorld())).toVector().toBlockPoint()
+//                                );
+
+//                                selection.getMinimumPoint().withX(map.bounds.getMin().getBlockX());
+//                                selection.getMinimumPoint().withY(map.bounds.getMin().getBlockY());
+//                                selection.getMinimumPoint().withZ(map.bounds.getMin().getBlockZ());
+//
+//                                selection.getMaximumPoint().withX(map.bounds.getMax().getBlockX());
+//                                selection.getMaximumPoint().withY(map.bounds.getMax().getBlockY());
+//                                selection.getMaximumPoint().withZ(map.bounds.getMax().getBlockZ());
+
+                                // ...so we will execute WorldEdit commands instead
+                                player.performCommand(String.format(
+                                        "/pos1 %s,%s,%s",
+                                        map.bounds.getMin().getBlockX(),
+                                        map.bounds.getMin().getBlockY(),
+                                        map.bounds.getMin().getBlockZ()
+                                ));
+
+                                player.performCommand(String.format(
+                                        "/pos2 %s,%s,%s",
+                                        map.bounds.getMax().getBlockX(),
+                                        map.bounds.getMax().getBlockY(),
+                                        map.bounds.getMax().getBlockZ()
+                                ));
+
+                                player.sendMessage("§aSelection set to map bounds.");
+//                            } catch (IncompleteRegionException e) {
+//                                throw new RuntimeException(e);
+//                            }
+                        })
+                );
+
+
+        StringArgument matchModeArg = (StringArgument) new StringArgument("mode")
+                .includeSuggestions(ArgumentSuggestions.strings("debug", "ffa", "tdm", "ctf"));
+        CommandAPICommand matchCmd = new CommandAPICommand("match")
+                .withSubcommand(new CommandAPICommand("create")
+                        .withArguments(matchModeArg, new StringArgument("mapName"))
+                        .executes((sender, args) -> {
+                            String mode = (String) args.get("mode");
+                            String mapName = (String) args.get("mapName");
+
+                            QMap map = QuakePlugin.INSTANCE.getMap(mapName);
+                            if (map == null) {
+                                sender.sendMessage("§cNo such map");
+                                return;
+                            }
+
+                            for (Match match : QuakePlugin.INSTANCE.matchManager.matches) {
+                                if (match.getMap().name.equals(mapName)) {
+                                    sender.sendMessage("§cThere is already a match in progress on "+mapName+". Please wait for the match to finish.");
+                                    return;
+                                }
+                            }
+
+                            MatchFactory matchFactory = switch (mode) {
+                                case "debug" -> new DebugMatchFactory();
+                                case "ffa" -> new FFAMatchFactory();
+                                case "tdm" -> new TDMMatchFactory();
+                                case "ctf" -> new CTFMatchFactory();
+                                default -> null;
+                            };
+                            if (matchFactory == null) {
+                                sender.sendMessage("§cInvalid mode \""+mode+"\"");
+                                return;
+                            }
+
+                            MatchManager matchManager = QuakePlugin.INSTANCE.matchManager;
+                            Match match = matchManager.newMatch(matchFactory, map);
+                            sender.sendMessage("Made a new "+matchFactory.getName()+" match with index "+ matchManager.matches.indexOf(match));
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("join")
+                        .withArguments(new IntegerArgument("index"))
+                        .executesPlayer((player, args) -> {
+                            MatchManager matchManager = QuakePlugin.INSTANCE.matchManager;
+                            QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+                            if (userState.currentMatch != null) {
+                                player.sendMessage("§cYou are in a match, please leave if you wish to join another");
+                                return;
+                            }
+
+                            int index = (int) args.get("index");
+                            if (index >= matchManager.matches.size() || index < 0) {
+                                player.sendMessage("§cNo such match");
+                                return;
+                            }
+
+                            matchManager.matches.get(index).join(player);
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("leave")
+                        .executesPlayer((player, args) -> {
+                            QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+                            if (userState.currentMatch == null) {
+                                player.sendMessage("§cYou aren't in a match");
+                                return;
+                            }
+                            userState.currentMatch.leave(player);
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("list")
+                        .executes((sender, args) -> {
+                            MatchManager matchManager = QuakePlugin.INSTANCE.matchManager;
+                            if (matchManager.matches.isEmpty()) {
+                                sender.sendMessage("§cThere are no matches");
+                                return;
+                            }
+
+                            for (int i = 0; i < matchManager.matches.size(); i++) {
+                                Match match = matchManager.matches.get(i);
+
+                                sender.sendMessage(String.format("%d: %s on %s, %d players", i, match.getName(), match.getMap().name, match.getPlayers().size()));
+                            }
+
+                        })
+                );
+
         CommandAPICommand test = new CommandAPICommand("test")
                 .executesPlayer((player, args) -> {
-//                    for (int i = 0; i < 25; i++) {
-//                        BossBar bar = BossBar.bossBar(Component.text("test"), 0, BossBar.Color.WHITE, BossBar.Overlay.PROGRESS);
-//                        player.showBossBar(bar);
-//                    }
-                    FastBoard board = new FastBoard(player);
-                    board.updateTitle(
-                            Component.text("30").color(TextColor.color(TextColor.color(0xff3f3f))).font(Key.key("hud"))
-                    );
+                    CTFMatch currentMatch = (CTFMatch) QuakePlugin.INSTANCE.userStates.get(player)
+                            .currentMatch;
+
+                    currentMatch
+                            .getBlueFlag()
+                            .getDisplay()
+                            .setItemStack(null);
+                    new CTFFlag(Team.BLUE, true, currentMatch, new Location(player.getWorld(), -1012, 50, -1));
                 });
 
         new CommandAPICommand("quake")
@@ -395,11 +653,13 @@ public abstract class Commands {
                         ammoSpawnerCmd,
                         armorSpawnerCmd,
                         powerupSpawnerCmd,
+                        ctfFlagCmd,
                         jumppadCmd,
                         portalCmd,
                         reloadCmd,
-                        reloadSpawnsCmd,
                         giveCmd,
+                        mapCmd,
+                        matchCmd,
                         test
                 )
                 .register();

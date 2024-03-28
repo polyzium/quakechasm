@@ -107,6 +107,7 @@ public class ArmorSpawner extends Spawner {
         display.getWorld().spawnParticle(Particle.SPELL_INSTANT, display.getLocation(), 16, 0.5, 0.5, 0.5);
         display.getWorld().playSound(display, "quake.items.respawn", 0.5f, 1f);
 
-        this.respawnTask.cancel();
+        if (this.respawnTask != null)
+            this.respawnTask.cancel();
     }
 }

@@ -1,11 +1,9 @@
-package ru.darkchronics.quake.events;
+package ru.darkchronics.quake.events.listeners;
 
 import com.destroystokyo.paper.event.entity.EntityKnockbackByEntityEvent;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
@@ -22,13 +20,13 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.util.Vector;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
 import ru.darkchronics.quake.game.combat.*;
 import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.hud.Hud;
-import ru.darkchronics.quake.hud.PowerupBoard;
 import ru.darkchronics.quake.misc.MiscUtil;
 
 import java.util.*;
@@ -99,7 +97,9 @@ public class CombatListener implements Listener {
             if (
                     attacker instanceof Player pAttacker &&
                             Powerup.hasPowerup(pAttacker, PowerupType.QUAD_DAMAGE)
-            ) event.setDamage(event.getDamage() * 3);
+            ) {
+                event.setDamage(event.getDamage() * 3);
+            }
 
             if (event.getEntity() != attackEvent.getDamager()) {
                 // Play hit sound
@@ -119,12 +119,13 @@ public class CombatListener implements Listener {
                 event.getEntity() instanceof Player player &&
                 Powerup.hasPowerup(player, PowerupType.PROTECTION)
         ) {
+            assert userState != null;
             player.sendMessage(event.getCause().toString());
-            DamageCause qDamageCause = userState.getLastDamageCause();
+            DamageData damageData = userState.lastDamage;
             if (
                     event.getCause() == EntityDamageEvent.DamageCause.LAVA ||
-                            (userState.isCustomDamage() && (qDamageCause == DamageCause.ROCKET_SPLASH ||
-                    qDamageCause == DamageCause.BFG_SPLASH))
+                            (damageData != null && (damageData.getCause() == DamageCause.ROCKET_SPLASH ||
+                    damageData.getCause() == DamageCause.BFG_SPLASH))
             ) {
                 player.playSound(player, "quake.items.powerups.protection.protect", 0.5f, 1f);
                 event.setCancelled(true);
@@ -145,6 +146,7 @@ public class CombatListener implements Listener {
         ) return;
 
         Player player = (Player) event.getEntity();
+        assert userState != null;
 
         // Calculate armor factor
         double finalDamage = event.getDamage();
@@ -161,7 +163,29 @@ public class CombatListener implements Listener {
 
         double finalMaxHealth = player.getHealth() - finalDamage;
         if (finalMaxHealth < 20) finalMaxHealth = 20;
-        player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(finalMaxHealth);
+        Objects.requireNonNull(player.getAttribute(Attribute.GENERIC_MAX_HEALTH)).setBaseValue(finalMaxHealth);
+
+        if (player.getHealth() - finalDamage <= 0) {
+            DamageData lastDamage = userState.lastDamage;
+            if (userState.currentMatch != null && lastDamage != null) {
+                userState.currentMatch.onDeath(player, lastDamage.getAttacker(), lastDamage.getCause());
+            } else if (userState.currentMatch != null && event instanceof EntityDamageByEntityEvent attackEvent) {
+                userState.currentMatch.onDeath(player, attackEvent.getDamager(), DamageCause.UNKNOWN);
+            } else if (userState.currentMatch != null) {
+                DamageCause qCause = switch (event.getCause()) {
+                    case FALL -> DamageCause.FALLING;
+                    case FIRE, VOID -> DamageCause.TRIGGER_HURT;
+                    case MELTING, LAVA, HOT_FLOOR -> DamageCause.LAVA;
+                    case DROWNING -> DamageCause.WATER;
+                    case SUICIDE -> DamageCause.SUICIDE;
+                    case FALLING_BLOCK, CRAMMING, FLY_INTO_WALL -> DamageCause.CRUSH;
+                    default -> DamageCause.UNKNOWN;
+                };
+                userState.currentMatch.onDeath(player, null, qCause);
+            }
+        }
+
+        userState.lastDamage = null;
     }
 
     // No hunger
@@ -184,54 +208,28 @@ public class CombatListener implements Listener {
     }
 
     // Respawn on spawnpoints
-    // TODO adapt to map system
     @EventHandler
     public void onRespawn(PlayerRespawnEvent event) {
-        Location spawnPoint = this.plugin.spawnpoints.get(
-                (int) (Math.random() * (this.plugin.spawnpoints.size() - 1))
-        );
-        spawnPoint.setX(spawnPoint.x()+0.5);
-        spawnPoint.setZ(spawnPoint.z()+0.5);
+        QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(event.getPlayer());
+        if (userState.currentMatch == null) return;
 
-        // Clear all ammo
-        WeaponUserState weaponState = this.plugin.userStates.get(event.getPlayer()).weaponState;
-        Arrays.fill(weaponState.ammo, 0);
-
-        ItemStack machinegun = new ItemStack(Material.CARROT_ON_A_STICK);
-        ItemMeta mgMeta = machinegun.getItemMeta();
-        mgMeta.setCustomModelData(0);
-        mgMeta.displayName(
-                Component.text("Machinegun").
-                        decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.byBoolean(false))
-        );
-        machinegun.setItemMeta(mgMeta);
-
-        weaponState.ammo[WeaponType.MACHINEGUN] = WeaponUtil.DEFAULT_AMMO[WeaponType.MACHINEGUN];
-
-        event.getPlayer().getInventory().addItem(machinegun);
+        Location spawnPoint = userState.prepareRespawn();
         event.setRespawnLocation(spawnPoint);
 
-        // Set health to 125 Quake HP
-        event.getPlayer().getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(25);
-        event.getPlayer().setHealth(25);
-        this.plugin.userStates.get(event.getPlayer()).startHealthDecreaser();
-
-        spawnPoint.getWorld().playSound(spawnPoint, "quake.world.tele_in", 1, 1);
-        MiscUtil.teleEffect(spawnPoint);
-
-        event.getPlayer().getInventory().setHeldItemSlot(0);
+        MiscUtil.teleEffect(spawnPoint, false);
     }
 
-    // No inventory drop + drop powerups
+    // No inventory drop + drop powerups + call match death event
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent e) {
         Player player = e.getPlayer();
         ItemStack handItem = player.getInventory().getItemInMainHand().clone();
         ItemMeta itemMeta = handItem.getItemMeta();
-        plugin.userStates.get(player).armor = 0;
+        QuakeUserState userState = plugin.userStates.get(player);
+        userState.armor = 0;
         if (itemMeta != null && itemMeta.hasCustomModelData() && handItem.getType() == Material.CARROT_ON_A_STICK) {
             int modelData = itemMeta.getCustomModelData();
-            WeaponUserState weaponState = plugin.userStates.get(player).weaponState;
+            WeaponUserState weaponState = userState.weaponState;
             PersistentDataContainer pdc = itemMeta.getPersistentDataContainer();
             pdc.set(new NamespacedKey("darkchronics-quake", "ammo"), PersistentDataType.INTEGER, weaponState.ammo[modelData]);
             handItem.setItemMeta(itemMeta);
@@ -242,6 +240,10 @@ public class CombatListener implements Listener {
         Collection<ItemStack> drops = e.getDrops();
         drops.clear();
         drops.add(handItem);
+
+        if (userState.currentMatch != null) {
+            e.deathMessage(Component.empty());
+        }
     }
 
     public static void sortGun(ItemStack gunItem, Player player, QuakePlugin plugin) {
@@ -297,11 +299,22 @@ public class CombatListener implements Listener {
         event.setCancelled(true);
     }
 
-    // No offhand
+    // No offhand, dash instead (default key is F)
     @EventHandler
     public void onHandSwap(PlayerSwapHandItemsEvent event) {
-        event.getPlayer().sendMessage("§cYou can't put items into offhand!");
+//        event.getPlayer().sendMessage("§cYou can't put items into offhand!");
         event.setCancelled(true);
+
+        Player player = event.getPlayer();
+        // TODO replace with Y coord check
+        if (!player.isOnGround()) return;
+        Vector dashVector = player.getLocation().getDirection().clone();
+        dashVector.setY(0);
+        dashVector.normalize();
+        dashVector.multiply(3);
+        dashVector.setY(0.25);
+
+        player.setVelocity(dashVector);
     }
 
     // Also no offhand, but in inventory
@@ -310,8 +323,9 @@ public class CombatListener implements Listener {
         if (event.getSlot() != 40)
             return;
         event.getView().getPlayer().sendMessage("§cYou can't put items into offhand!");
+        // TODO find a more reliable fix
         ItemStack cursorItem = event.getCursor().clone();
         event.setCancelled(true);
-//        event.getView().getPlayer().getInventory().addItem(cursorItem);
+        event.getView().getPlayer().getInventory().addItem(cursorItem);
     }
 }

@@ -8,9 +8,11 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import ru.darkchronics.quake.QuakePlugin;
-import ru.darkchronics.quake.events.CombatListener;
+import ru.darkchronics.quake.QuakeUserState;
+import ru.darkchronics.quake.events.listeners.CombatListener;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
 import ru.darkchronics.quake.hud.Hud;
+import ru.darkchronics.quake.matchmaking.Team;
 
 import java.util.Objects;
 
@@ -48,13 +50,17 @@ public class ItemSpawner extends Spawner {
         player.getWorld().playSound(player, "quake.weapons.pickup", 0.5f, 1f);
         Hud.pickupMessage(player, Objects.requireNonNull(item.getItemMeta().displayName()));
 
-        // Respawn in 5 seconds
-        // TODO 30 seconds for Team Deathmatch
+        // Respawn in 5 seconds, or 30 seconds if team based
+        QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+        int respawnTimeTicks = 5*20;
+        if (userState.currentMatch != null && (userState.currentMatch.getTeamOfPlayer(player) != Team.FREE)) {
+            respawnTimeTicks = 30*20;
+        }
         this.respawnTask = new BukkitRunnable() {
             public void run() {
                 respawn();
             }
-        }.runTaskLater(this.plugin, 100);
+        }.runTaskLater(this.plugin, respawnTimeTicks);
     }
 
     @Override
@@ -65,6 +71,7 @@ public class ItemSpawner extends Spawner {
         display.getWorld().spawnParticle(Particle.SPELL_INSTANT, display.getLocation(), 16, 0.5, 0.5, 0.5);
         display.getWorld().playSound(display, "quake.items.respawn", 0.5f, 1f);
 
-        this.respawnTask.cancel();
+        if (this.respawnTask != null)
+            this.respawnTask.cancel();
     }
 }

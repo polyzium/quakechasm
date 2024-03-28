@@ -1,18 +1,23 @@
 package ru.darkchronics.quake;
 
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
-import ru.darkchronics.quake.game.combat.DamageCause;
-import ru.darkchronics.quake.game.combat.WeaponUserState;
+import ru.darkchronics.quake.game.combat.*;
 import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.hud.Hud;
+import ru.darkchronics.quake.matchmaking.Match;
+import ru.darkchronics.quake.misc.MiscUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class QuakeUserState {
     private Player player;
@@ -23,7 +28,8 @@ public class QuakeUserState {
     public int armor = 0;
     public ArrayList<Powerup> activePowerups = new ArrayList<>(3);
     public Hud hud;
-    private DamageCause lastDamageCause;
+    public Match currentMatch;
+    public DamageData lastDamage;
 
     public QuakeUserState(Player player) {
         this.player = player;
@@ -33,6 +39,59 @@ public class QuakeUserState {
 
     public Player getPlayer() {
         return player;
+    }
+
+    public void reset() {
+        this.weaponState = new WeaponUserState(QuakePlugin.INSTANCE);
+        this.armor = 0;
+        for (Powerup activePowerup : this.activePowerups) {
+            activePowerup.timer.cancel();
+        }
+        this.activePowerups.clear();
+        this.hud.powerupBoard.update();
+        this.player.setHealth(20);
+        this.player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(20);
+        this.player.getInventory().clear();
+    }
+
+    public void initForMatch() {
+        this.reset();
+        this.initRespawn();
+    }
+
+    public void initRespawn() {
+        // Clear all ammo
+        Arrays.fill(weaponState.ammo, 0);
+
+        ItemStack machinegun = new ItemStack(Material.CARROT_ON_A_STICK);
+        ItemMeta mgMeta = machinegun.getItemMeta();
+        mgMeta.setCustomModelData(WeaponType.MACHINEGUN);
+        mgMeta.displayName(
+                Component.text("Machinegun").
+                        decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.byBoolean(false))
+        );
+        machinegun.setItemMeta(mgMeta);
+
+        weaponState.ammo[WeaponType.MACHINEGUN] = WeaponUtil.DEFAULT_AMMO[WeaponType.MACHINEGUN];
+
+        player.getInventory().addItem(machinegun);
+        player.getInventory().setHeldItemSlot(0);
+
+        // Set health to 125 Quake HP
+        player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(25);
+        player.setHealth(25);
+        this.startHealthDecreaser();
+    }
+    
+    public Location prepareRespawn() {
+        this.initRespawn();
+        return this.currentMatch.getMap().getRandomSpawnpoint(this.currentMatch.getTeamOfPlayer(this.player));
+    }
+
+    public void respawn() {
+        Location spawnpoint = this.prepareRespawn();
+        player.teleport(spawnpoint);
+        MiscUtil.teleEffect(spawnpoint, false);
     }
 
     public void startArmorDecreaser() {
@@ -58,7 +117,12 @@ public class QuakeUserState {
         this.healthDecreaser = new BukkitRunnable() {
             @Override
             public void run() {
-                if (Powerup.hasPowerup(player, PowerupType.REGENERATION)) return;
+                // Fix NullPointerException on logout
+                try {
+                    if (Powerup.hasPowerup(player, PowerupType.REGENERATION)) return;
+                } catch (NullPointerException e) {
+                    cancel();
+                }
 
                 double currentHealth = player.getHealth();
                 if (currentHealth <= 20) {
@@ -73,19 +137,5 @@ public class QuakeUserState {
             }
         };
         healthDecreaser.runTaskTimer(QuakePlugin.INSTANCE, 20, 20);
-    }
-
-    public boolean isCustomDamage() {
-        return lastDamageCause != null;
-    }
-
-    public DamageCause getLastDamageCause() {
-        DamageCause t = lastDamageCause;
-        lastDamageCause = null;
-        return t;
-    }
-
-    public void setLastDamageCause(DamageCause lastDamageCause) {
-        this.lastDamageCause = lastDamageCause;
     }
 }

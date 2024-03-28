@@ -14,6 +14,7 @@ import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.intellij.lang.annotations.Subst;
 import org.jetbrains.annotations.NotNull;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
@@ -30,6 +31,7 @@ public class Powerup {
         NAMES.put(PowerupType.PROTECTION, "Protection");
     }
 
+    @Subst("")
     public static EnumMap<PowerupType, String> SOUNDS = new EnumMap<>(PowerupType.class);
     static {
         SOUNDS.put(PowerupType.QUAD_DAMAGE, "quake.items.powerups.quad_damage.pickup");

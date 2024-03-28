@@ -1,0 +1,151 @@
+package ru.darkchronics.quake.matchmaking.map;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
+import ru.darkchronics.quake.QuakePlugin;
+import ru.darkchronics.quake.game.entities.Trigger;
+import ru.darkchronics.quake.game.entities.pickups.CTFFlag;
+import ru.darkchronics.quake.game.entities.pickups.PowerupSpawner;
+import ru.darkchronics.quake.game.entities.pickups.Spawner;
+import ru.darkchronics.quake.matchmaking.CTFMatch;
+import ru.darkchronics.quake.matchmaking.Match;
+import ru.darkchronics.quake.matchmaking.MatchManager;
+import ru.darkchronics.quake.matchmaking.Team;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static ru.darkchronics.quake.misc.MiscUtil.chunkIntersectsBoundingBox;
+
+public class QMap {
+    public String name;
+    public World world;
+    public BoundingBox bounds;
+    public ArrayList<Spawnpoint> spawnPoints;
+
+    public QMap() {}
+
+    public QMap(String name, World world, BoundingBox bounds, ArrayList<Spawnpoint> spawnPoints) {
+        this.name = name;
+        this.world = world;
+        this.bounds = bounds;
+        this.spawnPoints = spawnPoints;
+    }
+
+    // Call this ONLY WHEN STARTING A MATCH!!!
+    public void chunkLoad() {
+        for (Chunk chunk : this.getChunks()) {
+            chunk.setForceLoaded(true);
+            chunk.load();
+        }
+    }
+
+    public List<Chunk> getChunks() {
+        List<Chunk> chunks = new ArrayList<>();
+
+        int minX = (int) Math.floor(this.bounds.getMinX()) >> 4;
+        int minZ = (int) Math.floor(this.bounds.getMinZ()) >> 4;
+        int maxX = (int) Math.floor(this.bounds.getMaxX()) >> 4;
+        int maxZ = (int) Math.floor(this.bounds.getMaxZ()) >> 4;
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                Chunk chunk = world.getChunkAt(x, z);
+                if (chunkIntersectsBoundingBox(chunk, this.bounds)) {
+                    chunks.add(chunk);
+                }
+            }
+        }
+
+        return chunks;
+    }
+
+    public Location getRandomSpawnpoint(Team team) {
+        Predicate<Spawnpoint> belongsToTeam = spawnpoint -> spawnpoint.allowedTeams.contains(team);
+        Predicate<Spawnpoint> freeIfTeam = spawnpoint -> ((team == Team.RED || team == Team.BLUE) && spawnpoint.allowedTeams.contains(Team.FREE));
+        Predicate<Spawnpoint> teamIfFree = spawnpoint -> (team == Team.FREE && (spawnpoint.allowedTeams.contains(Team.RED) || spawnpoint.allowedTeams.contains(Team.BLUE)));
+
+        List<Spawnpoint> allowedSpawnpoints = this.spawnPoints.stream()
+                .filter(
+                        sp -> belongsToTeam.test(sp) || freeIfTeam.test(sp) || teamIfFree.test(sp)
+                )
+                .toList();
+
+        Spawnpoint spawnPoint = allowedSpawnpoints.get(
+                (int) (Math.random() * (this.spawnPoints.size() - 1))
+        );
+
+        Location spLoc = spawnPoint.pos;
+
+        return spLoc;
+    }
+
+    public void despawnPowerups(Match match) {
+        Collection<Entity> entities = this.world.getNearbyEntities(this.bounds);
+        for (Trigger trigger : QuakePlugin.INSTANCE.triggers) {
+            if (entities.contains(trigger.getEntity()) && trigger instanceof PowerupSpawner powerupSpawner) {
+                powerupSpawner.despawn(match);
+            }
+        }
+    }
+
+    public void respawnItems() {
+        Collection<Entity> entities = this.world.getNearbyEntities(this.bounds);
+        for (Trigger trigger : QuakePlugin.INSTANCE.triggers) {
+            if (entities.contains(trigger.getEntity()) && trigger instanceof Spawner spawner) {
+                spawner.respawn();
+            }
+        }
+    }
+
+    public void prepareForMatch(Match match) {
+        this.respawnItems();
+        this.despawnPowerups(match);
+
+        if (match instanceof CTFMatch ctf) {
+            Collection<Entity> entities = this.world.getNearbyEntities(this.bounds);
+            for (Trigger trigger : QuakePlugin.INSTANCE.triggers) {
+                if (entities.contains(trigger.getEntity()) && trigger instanceof CTFFlag flag) {
+                    flag.prepareForMatch(ctf);
+                }
+            }
+        }
+    }
+
+    public Match getMatch() {
+        for (Match match : MatchManager.INSTANCE.matches) {
+            if (match.getMap() == this)
+                return match;
+        }
+
+        return null;
+    }
+
+    public void cleanup() {
+        Collection<Entity> entities = this.world.getNearbyEntities(this.bounds);
+        for (Trigger trigger : QuakePlugin.INSTANCE.triggers) {
+            if (entities.contains(trigger.getEntity())) {
+                if (trigger instanceof PowerupSpawner powerupSpawner) {
+                    powerupSpawner.matchCleanup();
+                } else if (trigger instanceof CTFFlag flag) {
+                    flag.cleanup();
+                } else if (trigger instanceof Spawner spawner)
+                    spawner.respawn();
+            }
+        }
+
+        for (Chunk chunk : this.getChunks()) {
+            chunk.setForceLoaded(false);
+            chunk.unload();
+        }
+    }
+}

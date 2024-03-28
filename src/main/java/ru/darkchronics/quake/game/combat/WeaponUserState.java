@@ -1,5 +1,6 @@
 package ru.darkchronics.quake.game.combat;
 
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.entity.Player;
@@ -21,6 +22,7 @@ public class WeaponUserState {
     private boolean shooting;
     public int[] ammo = new int[]{100, 0, 0, 0, 0, 0, 0};
     public int[] cooldowns = new int[]{0, 0, 0, 0, 0, 0, 0};
+    public BossBar ammoWarning = BossBar.bossBar(Component.text("LOW AMMO WARNING"), 0, BossBar.Color.WHITE, BossBar.Overlay.PROGRESS);
 
     public WeaponUserState(QuakePlugin plugin) {
         this.plugin = plugin;
@@ -104,6 +106,19 @@ public class WeaponUserState {
 
                         justStartedShooting = false;
                         ammo[customModelData2] -= 1;
+
+                        // Determine whether to show the ammo warning
+//                        int zeroesAmount = 0;
+//                        for (int i : ammo) {
+//                            if (i == 0) {
+//                                zeroesAmount++;
+//                            }
+//                        }
+//                        if (zeroesAmount >= ammo.length-1 && ammo[customModelData2] <= 30) {
+//                            player.playSound(player, "quake.weapons.no_ammo", 0.5f, 1f);
+//                            player.showBossBar(ammoWarning);
+//                        } else
+//                            player.hideBossBar(ammoWarning);
 
                         cooldowns[customModelData2]++;
                     }

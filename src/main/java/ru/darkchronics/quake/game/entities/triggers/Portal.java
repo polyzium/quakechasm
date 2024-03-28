@@ -92,12 +92,13 @@ public class Portal implements Trigger {
     public void onTrigger(Entity entity) {
         entity.teleport(this.targetLoc);
 
-        World world = entity.getWorld();
-        world.playSound(this.marker.getLocation(), "quake.world.tele_out", 1, 1);
-        MiscUtil.teleEffect(this.marker.getLocation());
+        MiscUtil.teleEffect(this.marker.getLocation(), true);
+        MiscUtil.teleEffect(targetLoc, false);
+    }
 
-        world.playSound(targetLoc, "quake.world.tele_in", 1, 1);
-        MiscUtil.teleEffect(targetLoc);
+    @Override
+    public void onUnload() {
+        this.particleEmitter.cancel();
     }
 
     @Override
@@ -117,6 +118,7 @@ public class Portal implements Trigger {
 
     @Override
     public void remove() {
+        this.onUnload();
         marker.remove();
     }
 }

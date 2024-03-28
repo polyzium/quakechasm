@@ -4,11 +4,9 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
-import org.jetbrains.annotations.NotNull;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
@@ -69,7 +67,7 @@ public abstract class WeaponUtil {
 
         applySpread(look, spread);
 
-        return player.getWorld().rayTrace(loc, look, limit, FluidCollisionMode.NEVER, true, 0.1, e -> (
+        return player.getWorld().rayTrace(loc, look, limit, FluidCollisionMode.NEVER, true, 0.35, e -> (
                 (e != player && (e instanceof LivingEntity))
         ));
     }
@@ -172,10 +170,10 @@ public abstract class WeaponUtil {
         if (cause == null)
             cause = DamageCause.UNKNOWN;
 
-        if (victim instanceof Player player)
-            QuakePlugin.INSTANCE.userStates.get(player).setLastDamageCause(cause);
-
         victim.setNoDamageTicks(0);
+        if (victim instanceof Player player && player.getGameMode() != GameMode.CREATIVE)
+            QuakePlugin.INSTANCE.userStates.get(player).lastDamage = new DamageData(attacker, amount, cause);
+
         victim.damage(amount, attacker);
     }
 

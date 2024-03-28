@@ -115,6 +115,10 @@ public class Jumppad implements Trigger {
         }.runTaskLater(this.plugin, 10);
     }
 
+    public void onUnload() {
+        this.particleEmitter.cancel();
+    }
+
     public static void testJump(Player player, Vector launchVec, QuakePlugin plugin) {
         new BukkitRunnable() {
             int ticks = 0;
@@ -150,7 +154,7 @@ public class Jumppad implements Trigger {
 
     @Override
     public void remove() {
-        this.particleEmitter.cancel();
+        this.onUnload();
         this.marker.remove();
     }
 }

@@ -75,4 +75,8 @@ public abstract class Spawner implements DisplayPickup {
         if (!(entity instanceof Player)) return;
         this.onPickup((Player) entity);
     }
+
+    public void onUnload() {
+        // do nothing
+    }
 }

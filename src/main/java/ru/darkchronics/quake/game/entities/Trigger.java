@@ -6,6 +6,7 @@ import org.bukkit.util.BoundingBox;
 
 public interface Trigger {
     public void onTrigger(Entity entity);
+    public void onUnload();
     public Location getLocation();
     public Entity getEntity();
     public BoundingBox getOffsetBoundingBox();

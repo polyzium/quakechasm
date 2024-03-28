@@ -1,34 +1,53 @@
 package ru.darkchronics.quake;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.block.Banner;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.HandlerList;
+import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.BoundingBox;
 import org.joml.Matrix4d;
 import org.joml.Matrix4f;
 import ru.darkchronics.quake.commands.Commands;
-import ru.darkchronics.quake.events.TriggerListener;
-import ru.darkchronics.quake.events.CombatListener;
+import ru.darkchronics.quake.events.listeners.ChatListener;
+import ru.darkchronics.quake.events.listeners.TriggerListener;
+import ru.darkchronics.quake.events.listeners.CombatListener;
 import ru.darkchronics.quake.game.entities.*;
-import ru.darkchronics.quake.events.MiscListener;
+import ru.darkchronics.quake.events.listeners.MiscListener;
 import ru.darkchronics.quake.game.entities.pickups.*;
 import ru.darkchronics.quake.game.entities.triggers.Jumppad;
 import ru.darkchronics.quake.game.entities.triggers.Portal;
+import ru.darkchronics.quake.matchmaking.MatchManager;
+import ru.darkchronics.quake.matchmaking.Team;
+import ru.darkchronics.quake.matchmaking.map.QMap;
+import ru.darkchronics.quake.matchmaking.map.Spawnpoint;
+import ru.darkchronics.quake.misc.MiscUtil;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class QuakePlugin extends JavaPlugin {
     public static QuakePlugin INSTANCE;
     public ArrayList<Trigger> triggers;
     public Map<Player,QuakeUserState> userStates;
-    public ArrayList<Location> spawnpoints;
     private float rotatorAngle;
+    public ArrayList<QMap> maps;
+    public MatchManager matchManager;
 
     public void startRotatingPickups() {
         this.rotatorAngle = 0;
@@ -41,8 +60,8 @@ public class QuakePlugin extends JavaPlugin {
 
                     ItemDisplay pickupDisplay = ((DisplayPickup) trigger).getDisplay();
                     if (pickupDisplay.isDead() && pickupDisplay.isEmpty()) {
-                        Location loc = pickupDisplay.getLocation();
-                        getLogger().warning(String.format("A DisplayPickup at %.1f %.1f %.1f has been removed manually", loc.x(), loc.y(), loc.z()));
+//                        Location loc = pickupDisplay.getLocation();
+//                        getLogger().warning(String.format("A DisplayPickup at %.1f %.1f %.1f has been removed manually", loc.x(), loc.y(), loc.z()));
                         triggers.remove(trigger);
                         return;
                     }
@@ -72,6 +91,13 @@ public class QuakePlugin extends JavaPlugin {
     }
 
     public void loadTrigger(Entity entity) {
+        for (Trigger trigger : this.triggers) {
+            if (entity == trigger.getEntity()) {
+                QuakePlugin.INSTANCE.getLogger().warning("Attempted to add same trigger twice!");
+                return;
+            }
+        }
+
         String entityType = QEntityUtil.getEntityType(entity);
         switch (entityType) {
             case "item_spawner":
@@ -88,6 +114,9 @@ public class QuakePlugin extends JavaPlugin {
                 break;
             case "powerup_spawner":
                 new PowerupSpawner((ItemDisplay) entity, this);
+                break;
+            case "ctf_flag":
+                new CTFFlag((ItemDisplay) entity);
                 break;
             case "jumppad":
                 new Jumppad((Marker) entity, this);
@@ -125,22 +154,147 @@ public class QuakePlugin extends JavaPlugin {
         }
     }
 
-    public void scanSpawnpoints() {
-        // TODO scan spawnpoints per map; to avoid lags due to very expensive scanning, use marker entities
-        World world = Bukkit.getWorld("flat");
-        this.spawnpoints = new ArrayList<>(16);
-        for (Chunk chunk : world.getLoadedChunks()) {
-            for (int x = 0; x < 16; x++) {
-                for (int z = 0; z < 16; z++) {
-                    for (int y = 0; y < 256; y++) {
-                        Block block = chunk.getBlock(x, y, z);
-                        if (block.getType() == Material.RED_CARPET) {
-                            this.spawnpoints.add(block.getLocation());
-                        }
-                    }
-                }
+    public static ArrayList<Spawnpoint> scanSpawnpointsIn(World world, BoundingBox bounds) {
+        ArrayList<Spawnpoint> spawnpoints = new ArrayList<>();
+
+        for (Entity entity : world.getNearbyEntities(bounds)) {
+            if (!(entity instanceof ArmorStand armorStand)) continue;
+
+            EntityEquipment equipment = armorStand.getEquipment();
+            ItemStack chestplate = equipment.getChestplate();
+            if (chestplate.getType() != Material.LEATHER_CHESTPLATE) continue;
+
+            LeatherArmorMeta chestplateMeta = (LeatherArmorMeta) chestplate.getItemMeta();
+            Team allowedTeam = switch (chestplateMeta.getColor().asRGB()) {
+                case 0xb02e26 -> Team.RED;
+                case 0x3c44aa -> Team.BLUE;
+                case 0xfed83d -> Team.FREE;
+                case 0x8932b8 -> Team.SPECTATOR;
+                default -> null;
+            };
+            if (allowedTeam == null) continue;
+
+            spawnpoints.add(new Spawnpoint(
+                    armorStand.getLocation(),
+                    new ArrayList<>(List.of(allowedTeam))
+            ));
+        }
+
+        return spawnpoints;
+    }
+
+    public static void placeSpawnpoint(Spawnpoint spawnpoint) {
+        Location location = spawnpoint.pos;
+        Team team = spawnpoint.allowedTeams.get(0);
+
+        ArmorStand armorStand = location.getWorld().spawn(location, ArmorStand.class);
+        armorStand.setGravity(false);
+
+        ItemStack chestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
+        LeatherArmorMeta chestplateMeta = (LeatherArmorMeta) chestplate.getItemMeta();
+        int chestplateColor = switch (team) {
+            case RED -> 0xb02e26;
+            case BLUE -> 0x3c44aa;
+            case FREE -> 0xfed83d;
+            case SPECTATOR -> 0x8932b8;
+        };
+        chestplateMeta.setColor(Color.fromRGB(chestplateColor));
+        chestplate.setItemMeta(chestplateMeta);
+
+        EntityEquipment equipment = armorStand.getEquipment();
+        equipment.setChestplate(chestplate);
+    }
+
+    public QMap getMap(String name) {
+        for (QMap map : this.maps) {
+            if (map.name.equals(name)) {
+                return map;
             }
         }
+        return null;
+    }
+
+    public void saveMaps() {
+        File dataFolder = this.getDataFolder();
+        if (!dataFolder.exists()) {
+            if (!dataFolder.mkdir()) {
+                getLogger().severe("Unable to create data folder "+dataFolder+". Maps won't be saved.");
+                return;
+            }
+        }
+        File mapFile = new File(dataFolder, "maps.json");
+        try {
+            if (!mapFile.exists()) {
+                if (!mapFile.createNewFile()) {
+                    getLogger().severe("Unable to create map file "+mapFile+". Maps won't be saved.");
+                    return;
+                };
+            };
+        } catch (IOException e) {
+            getLogger().severe(e.getMessage());
+            getLogger().severe("Unable to create map file "+mapFile+". Maps won't be saved.");
+            return;
+        }
+
+//        ArrayList<QMap.QMapPersistent> persistentMaps = new ArrayList<>(8);
+//        for (QMap map : this.maps) {
+//            QMap.QMapPersistent persistentMap = map.toPersistent();
+//            persistentMaps.add(persistentMap);
+//        }
+
+        String json = MiscUtil.getEnhancedGson().toJson(this.maps);
+        try {
+            FileWriter writer = new FileWriter(mapFile);
+            writer.write(json);
+            writer.close();
+        } catch (IOException e) {
+            getLogger().severe(e.getMessage());
+            getLogger().severe("Unable to create map file "+mapFile+". Maps won't be saved.");
+            return;
+        }
+    }
+
+    public void loadMaps() {
+        this.maps = new ArrayList<>(8);
+
+        File dataFolder = this.getDataFolder();
+        if (!dataFolder.exists()) {
+            getLogger().severe("Data folder doesn't exist, maps won't be loaded.");
+            return;
+        }
+        File mapFile = new File(dataFolder, "maps.json");
+        if (!mapFile.exists()) {
+            getLogger().severe("Map file doesn't exist, maps won't be loaded.");
+            return;
+        }
+
+//        ArrayList<QMap.QMapPersistent> persistentMaps;
+//        try {
+//            FileReader reader = new FileReader(mapFile);
+//            persistentMaps = MiscUtil.getEnhancedGson().fromJson(reader, new TypeToken<ArrayList<QMap.QMapPersistent>>(){}.getType());
+//        } catch (IOException e) {
+//            getLogger().severe(e.getMessage());
+//            getLogger().severe("Unable to read map data from "+mapFile+". Maps won't be loaded.");
+//            return;
+//        }
+//
+//        this.maps = new ArrayList<>(8);
+//        for (QMap.QMapPersistent persistentMap : persistentMaps) {
+//            QMap qMap = QMap.fromPersistent(persistentMap);
+//            this.maps.add(qMap);
+//        }
+
+        ArrayList<QMap> maps;
+        try {
+            FileReader reader = new FileReader(mapFile);
+            maps = MiscUtil.getEnhancedGson().fromJson(reader, new TypeToken<ArrayList<QMap>>(){}.getType());
+        } catch (IOException e) {
+            getLogger().severe(e.getMessage());
+            getLogger().severe("Unable to read map data from "+mapFile+". Maps won't be loaded.");
+            return;
+        }
+
+        this.maps = maps;
     }
 
     @Override
@@ -153,15 +307,18 @@ public class QuakePlugin extends JavaPlugin {
         Commands.initQuakeCommand(this);
 
         // events
-        getServer().getPluginManager().registerEvents(new MiscListener(this), this);
+        getServer().getPluginManager().registerEvents(new MiscListener(), this);
+        getServer().getPluginManager().registerEvents(new ChatListener(), this);
         getServer().getPluginManager().registerEvents(new TriggerListener(this), this);
         getServer().getPluginManager().registerEvents(new CombatListener(this), this);
 
         // other stuff
+        getLogger().info("Initializing match manager");
+        this.matchManager = new MatchManager();
         getLogger().info("Instantiating states for current players");
         this.instantiateStates();
-        getLogger().info("Scanning spawnpoints in loaded chunks");
-        this.scanSpawnpoints();
+        getLogger().info("Loading maps");
+        this.loadMaps();
         getLogger().info("Loading triggers");
         this.loadTriggers();
         this.startRotatingPickups();
@@ -187,8 +344,9 @@ public class QuakePlugin extends JavaPlugin {
         getLogger().info("Untracking triggers");
         this.triggers.clear();
 
-        getLogger().info("Clearing spawnpoints");
-        this.spawnpoints.clear();
+        getLogger().info("Saving maps");
+        this.saveMaps();
+        this.maps.clear();
 
         getLogger().info("DarkChronics Quake disabled. Goodbye!");
     }

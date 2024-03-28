@@ -54,7 +54,7 @@ public class Hud {
                         state.weaponState.cooldowns[heldWeapon] != 0
         ) {
             float cooldownFactor = ((float) state.weaponState.cooldowns[heldWeapon] / WeaponUtil.PERIODS[heldWeapon]*0.75f)+0.25f;
-            ammoColor = TextColor.color(cooldownFactor, cooldownFactor*0.68f, 0);
+            ammoColor = TextColor.color(cooldownFactor, cooldownFactor*0.25f, cooldownFactor*0.25f);
         }
         if (heldWeapon != -1)
             components.add(

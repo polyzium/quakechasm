@@ -1,4 +1,4 @@
-package ru.darkchronics.quake.events;
+package ru.darkchronics.quake.events.listeners;
 
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
@@ -31,7 +31,7 @@ public class TriggerListener implements Listener {
 
             Location triggerLoc = trigger.getLocation();
             if (trigger.isDead()) {
-                Bukkit.getLogger().warning(String.format("Removing dead trigger %s at %.1f %.1f %.1f", trigger.getClass().getTypeName(), triggerLoc.x(), triggerLoc.y(), triggerLoc.z()));
+                Bukkit.getLogger().warning(String.format("Removing dead trigger %s at %.1f %.1f %.1f", trigger.getClass().getSimpleName(), triggerLoc.x(), triggerLoc.y(), triggerLoc.z()));
                 trigger.remove();
                 this.plugin.triggers.remove(trigger);
                 continue;
@@ -73,7 +73,10 @@ public class TriggerListener implements Listener {
             break;
         }
 
-        if (toRemove != null)
+        if (toRemove != null) {
+            toRemove.onUnload();
             this.plugin.triggers.remove(toRemove);
+        }
+
     }
 }

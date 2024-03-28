@@ -13,6 +13,11 @@ public enum DamageCause {
     BFG_SPLASH,
     BFG_RAY,
     TELEFRAG,
+    WATER,
+    LAVA,
+    CRUSH,
+    FALLING,
+    SUICIDE,
     TARGET_LASER,
     TRIGGER_HURT,
 }

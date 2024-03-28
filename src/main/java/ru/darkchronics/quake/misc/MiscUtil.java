@@ -1,7 +1,12 @@
 package ru.darkchronics.quake.misc;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.bukkit.*;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
+import ru.darkchronics.quake.misc.adapters.LocationAdapter;
+import ru.darkchronics.quake.misc.adapters.WorldAdapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,8 +15,13 @@ public abstract class MiscUtil {
     public static final double GRAVITY = 0.08;
     public static final double AIR_DRAG = 0.91;
 
-    public static void teleEffect(Location targetLoc) {
+    public static void teleEffect(Location targetLoc, boolean teleOut) {
         World world = targetLoc.getWorld();
+
+        if (!teleOut)
+            targetLoc.getWorld().playSound(targetLoc, "quake.world.tele_in", 1, 1);
+        else
+            targetLoc.getWorld().playSound(targetLoc, "quake.world.tele_out", 1, 1);
 
         world.spawnParticle(Particle.REDSTONE, targetLoc, 32, 0.25, 1, 0.25, 1, new Particle.DustOptions(Color.fromRGB(0xFF00FF), 1));
         world.spawnParticle(Particle.SPELL_INSTANT, targetLoc, 32, 0.25, 1, 0.25, 1);
@@ -47,5 +57,25 @@ public abstract class MiscUtil {
 
     public static String[] getEnumNamesLowercase(Class<? extends Enum<?>> e) {
         return Arrays.stream(e.getEnumConstants()).map(Enum::name).map(String::toLowerCase).toArray(String[]::new);
+    }
+
+    public static Gson getEnhancedGson() {
+        GsonBuilder builder = new GsonBuilder();
+        builder.setPrettyPrinting();
+        builder.registerTypeHierarchyAdapter(World.class, new WorldAdapter());
+        builder.registerTypeAdapter(Location.class, new LocationAdapter());
+
+        return builder.create();
+    }
+
+    public static boolean chunkIntersectsBoundingBox(Chunk chunk, BoundingBox boundingBox) {
+        int chunkMinX = chunk.getX() << 4;
+        int chunkMinZ = chunk.getZ() << 4;
+        int chunkMaxX = chunkMinX + 15;
+        int chunkMaxZ = chunkMinZ + 15;
+
+        BoundingBox chunkBB = new BoundingBox(chunkMinX, chunk.getWorld().getMinHeight(), chunkMinZ, chunkMaxX, chunk.getWorld().getMaxHeight(), chunkMaxZ);
+
+        return boundingBox.overlaps(chunkBB);
     }
 }

@@ -1,5 +1,5 @@
 name: DarkChronics-Quake
-version: 0.1.0
+version: 1.0.0-beta1
 main: ru.darkchronics.quake.QuakePlugin
 depend: [CommandAPI]
 description: Quake minigame for DC minigames server
