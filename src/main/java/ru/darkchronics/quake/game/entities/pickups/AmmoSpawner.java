@@ -48,8 +48,8 @@ public class AmmoSpawner extends Spawner {
     private ItemStack itemForRespawn;
     private BukkitTask respawnTask;
     private int ammoType;
-    public AmmoSpawner(int ammoType, World world, Location location, QuakePlugin plugin) {
-        super(new ItemStack(Material.GUNPOWDER), world, location, plugin);
+    public AmmoSpawner(int ammoType, World world, Location location) {
+        super(new ItemStack(Material.GUNPOWDER), world, location);
 
         ItemStack displayItem = new ItemStack(Material.GUNPOWDER);
         ItemMeta displayItemMeta = displayItem.getItemMeta();
@@ -58,28 +58,28 @@ public class AmmoSpawner extends Spawner {
 
         this.ammoType = ammoType;
         PersistentDataContainer displayData = display.getPersistentDataContainer();
-        NamespacedKey ammoTypeKey = new NamespacedKey(super.plugin, "ammoType");
+        NamespacedKey ammoTypeKey = new NamespacedKey(QuakePlugin.INSTANCE, "ammoType");
         displayData.set(ammoTypeKey, PersistentDataType.INTEGER, this.ammoType);
 
         super.display.setItemStack(displayItem);
         QEntityUtil.setEntityType(super.display, "ammo_spawner");
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
-    public AmmoSpawner(ItemDisplay display, QuakePlugin plugin) {
-        super(display, plugin);
+    public AmmoSpawner(ItemDisplay display) {
+        super(display);
 
         PersistentDataContainer displayData = display.getPersistentDataContainer();
-        NamespacedKey ammoTypeKey = new NamespacedKey(super.plugin, "ammoType");
+        NamespacedKey ammoTypeKey = new NamespacedKey(QuakePlugin.INSTANCE, "ammoType");
         this.ammoType = displayData.get(ammoTypeKey, PersistentDataType.INTEGER);
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
     @Override
     public void onPickup(Player player) {
-        WeaponUserState weaponState = plugin.userStates.get(player).weaponState;
+        WeaponUserState weaponState = QuakePlugin.INSTANCE.userStates.get(player).weaponState;
         if (this.display.getItemStack().isEmpty() || weaponState.ammo[ammoType] >= 200) return;
 
         this.itemForRespawn = this.display.getItemStack();
@@ -96,7 +96,7 @@ public class AmmoSpawner extends Spawner {
             public void run() {
                 respawn();
             }
-        }.runTaskLater(this.plugin, 20*40);
+        }.runTaskLater(QuakePlugin.INSTANCE, 20*40);
     }
 
     @Override

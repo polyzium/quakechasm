@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 
 public abstract class Commands {
    
-    public static void initQuakeCommand(QuakePlugin plugin) {
+    public static void initQuakeCommand() {
         CommandAPICommand jumppadCmd = new CommandAPICommand("jumppad")
                 .withSubcommand(new CommandAPICommand("create")
                         .withArguments(new DoubleArgument("power"))
@@ -64,8 +64,7 @@ public abstract class Commands {
 
                             new Jumppad(
                                     loc,
-                                    player.getEyeLocation().getDirection().multiply((double) args.get("power")),
-                                    plugin
+                                    player.getEyeLocation().getDirection().multiply((double) args.get("power"))
                             );
                             player.sendMessage(String.format("Made a Jumppad at %.1f %.1f %.1f", loc.x(), loc.y(), loc.z()));
                         })
@@ -81,7 +80,7 @@ public abstract class Commands {
                                 return;
                             }
 
-                            for (Trigger trigger : plugin.triggers) {
+                            for (Trigger trigger : QuakePlugin.INSTANCE.triggers) {
                                 if (!(trigger instanceof Jumppad jumppad)) continue;
                                 if (trigger.getEntity() != nearestJumppad) continue;
 
@@ -153,8 +152,7 @@ public abstract class Commands {
 
                             new Jumppad(
                                     jpLocation,
-                                    launchVector,
-                                    plugin
+                                    launchVector
                             );
                             player.sendMessage(String.format("Made a Jumppad at %.1f %.1f %.1f", jpLocation.x(), jpLocation.y(), jpLocation.z()));
                         })
@@ -163,7 +161,7 @@ public abstract class Commands {
         CommandAPICommand portalCmd = new CommandAPICommand("portal")
                 .withSubcommand(new CommandAPICommand("create")
                         .executesPlayer((player, args) -> {
-                            QuakeUserState state = plugin.userStates.get(player);
+                            QuakeUserState state = QuakePlugin.INSTANCE.userStates.get(player);
                             if (state.portalLoc == null) {
                                 state.portalLoc = player.getLocation();
                                 player.sendMessage("Portal location stored. Go to the teleport target location and run the command again to create the portal.\nOtherwise, do /quake portal cancel");
@@ -171,7 +169,7 @@ public abstract class Commands {
                             }
 
                             Location ploc = player.getLocation();
-                            new Portal(state.portalLoc, ploc, plugin);
+                            new Portal(state.portalLoc, ploc);
                             player.sendMessage(String.format("Made a Portal at %.1f %.1f %.1f, linked to %.1f %.1f %.1f",
                                     state.portalLoc.x(), state.portalLoc.y(), state.portalLoc.z(),
                                     ploc.x(), ploc.y(), ploc.z()
@@ -181,7 +179,7 @@ public abstract class Commands {
                 )
                 .withSubcommand(new CommandAPICommand("cancel")
                         .executesPlayer((player, args) -> {
-                            QuakeUserState state = plugin.userStates.get(player);
+                            QuakeUserState state = QuakePlugin.INSTANCE.userStates.get(player);
                             if (state.portalLoc == null) {
                                 player.sendMessage("§cAlready cancelled");
                                 return;
@@ -225,8 +223,7 @@ public abstract class Commands {
                             new HealthSpawner(
                                     health,
                                     player.getWorld(),
-                                    loc,
-                                    plugin
+                                    loc
                             );
                             player.sendMessage(String.format("Made a HealthSpawner at %.1f %.1f %.1f", loc.x(), loc.y(), loc.z()));
                         })
@@ -254,8 +251,7 @@ public abstract class Commands {
                             new AmmoSpawner(
                                     ammoType,
                                     player.getWorld(),
-                                    loc,
-                                    plugin
+                                    loc
                             );
                             player.sendMessage(String.format("Made an AmmoSpawner at %.1f %.1f %.1f", loc.x(), loc.y(), loc.z()));
                         })
@@ -292,8 +288,7 @@ public abstract class Commands {
                             new ArmorSpawner(
                                     armor,
                                     player.getWorld(),
-                                    loc,
-                                    plugin
+                                    loc
                             );
                             player.sendMessage(String.format("Made an ArmorSpawner at %.1f %.1f %.1f", loc.x(), loc.y(), loc.z()));
                         })
@@ -323,7 +318,7 @@ public abstract class Commands {
                                 return;
                             }
 
-                            new PowerupSpawner(type, player.getWorld(), loc, false, 30, plugin);
+                            new PowerupSpawner(type, player.getWorld(), loc, false, 30);
                             player.sendMessage(String.format("Made a PowerupSpawner at %.1f %.1f %.1f", loc.x(), loc.y(), loc.z()));
                         })
                 );
@@ -371,16 +366,15 @@ public abstract class Commands {
                     new ItemSpawner(
                             player.getInventory().getItemInMainHand(),
                             player.getWorld(),
-                            loc,
-                            plugin
+                            loc
                     );
                     player.sendMessage(String.format("Made an ItemSpawner at %.1f %.1f %.1f", loc.x(), loc.y(), loc.z()));
                 });
 
         CommandAPICommand reloadCmd = new CommandAPICommand("reload")
                 .executes((sender, args) -> {
-                    plugin.onDisable();
-                    plugin.onEnable();
+                    QuakePlugin.INSTANCE.onDisable();
+                    QuakePlugin.INSTANCE.onEnable();
                     sender.sendMessage("Plugin reloaded");
                     Bukkit.getServer().broadcast(
                             Component.text("[DarkChronics-Quake]").color(TextColor.color(0x8e60e0)).append(

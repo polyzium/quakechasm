@@ -20,13 +20,11 @@ import ru.darkchronics.quake.misc.ParticleUtil;
 
 public class Portal implements Trigger {
     static BoundingBox boundingBox = new BoundingBox(-0.5, 0, -0.5, 0.5, 2, 0.5);
-    QuakePlugin plugin;
     Marker marker;
     Location targetLoc;
     BukkitRunnable particleEmitter;
 
-    public Portal(Location loc, Location targetLoc, QuakePlugin plugin) {
-        this.plugin = plugin;
+    public Portal(Location loc, Location targetLoc) {
         this.marker = (Marker) loc.getWorld().spawnEntity(loc, EntityType.MARKER);
         this.targetLoc = targetLoc;
 
@@ -39,12 +37,11 @@ public class Portal implements Trigger {
         pdc.set(new NamespacedKey("darkchronics-quake", "target_dir"), PersistentDataType.BYTE_ARRAY, serializedTargetDir);
 
         this.particleEmitter = this.newParticleEmitter();
-        this.particleEmitter.runTaskTimer(this.plugin, 0, 1);
-        plugin.triggers.add(this);
+        this.particleEmitter.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
-    public Portal(Marker marker, QuakePlugin plugin) {
-        this.plugin = plugin;
+    public Portal(Marker marker) {
         this.marker = marker;
 
         PersistentDataContainer pdc = this.marker.getPersistentDataContainer();
@@ -55,9 +52,9 @@ public class Portal implements Trigger {
         this.targetLoc = targetPos.toLocation(marker.getWorld()).setDirection(targetDir);
 
         this.particleEmitter = this.newParticleEmitter();
-        this.particleEmitter.runTaskTimer(this.plugin, 0, 1);
+        this.particleEmitter.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
     private BukkitRunnable newParticleEmitter() {

@@ -18,22 +18,16 @@ import ru.darkchronics.quake.game.entities.pickups.Spawner;
 import java.util.ArrayList;
 
 public class TriggerListener implements Listener {
-    private final QuakePlugin plugin;
-
-    public TriggerListener(QuakePlugin plugin) {
-        this.plugin = plugin;
-    }
-
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
-        for (int i = 0; i < this.plugin.triggers.size(); i++) {
-            Trigger trigger = this.plugin.triggers.get(i);
+        for (int i = 0; i < QuakePlugin.INSTANCE.triggers.size(); i++) {
+            Trigger trigger = QuakePlugin.INSTANCE.triggers.get(i);
 
             Location triggerLoc = trigger.getLocation();
             if (trigger.isDead()) {
                 Bukkit.getLogger().warning(String.format("Removing dead trigger %s at %.1f %.1f %.1f", trigger.getClass().getSimpleName(), triggerLoc.x(), triggerLoc.y(), triggerLoc.z()));
                 trigger.remove();
-                this.plugin.triggers.remove(trigger);
+                QuakePlugin.INSTANCE.triggers.remove(trigger);
                 continue;
             }
 
@@ -56,15 +50,15 @@ public class TriggerListener implements Listener {
         Entity entity = event.getEntity();
         if (QEntityUtil.getEntityType(event.getEntity()) == null) return;
 
-        plugin.loadTrigger(entity);
+        QuakePlugin.INSTANCE.loadTrigger(entity);
     }
 
     @EventHandler
     public void onEntityRemove(EntityRemoveFromWorldEvent event) {
         Trigger toRemove = null;
 
-        for (int i = 0; i < this.plugin.triggers.size(); i++) {
-            Trigger trigger = this.plugin.triggers.get(i);
+        for (int i = 0; i < QuakePlugin.INSTANCE.triggers.size(); i++) {
+            Trigger trigger = QuakePlugin.INSTANCE.triggers.get(i);
             if (event.getEntity() != trigger.getEntity()) continue;
 
             if (trigger instanceof Spawner spawner) spawner.respawn();
@@ -75,7 +69,7 @@ public class TriggerListener implements Listener {
 
         if (toRemove != null) {
             toRemove.onUnload();
-            this.plugin.triggers.remove(toRemove);
+            QuakePlugin.INSTANCE.triggers.remove(toRemove);
         }
 
     }

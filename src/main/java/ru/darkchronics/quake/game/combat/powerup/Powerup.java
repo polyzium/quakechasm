@@ -31,7 +31,6 @@ public class Powerup {
         NAMES.put(PowerupType.PROTECTION, "Protection");
     }
 
-    @Subst("")
     public static EnumMap<PowerupType, String> SOUNDS = new EnumMap<>(PowerupType.class);
     static {
         SOUNDS.put(PowerupType.QUAD_DAMAGE, "quake.items.powerups.quad_damage.pickup");
@@ -125,7 +124,7 @@ public class Powerup {
             playerLocation.setY(playerLocation.getY()+1);
 
             if (playerLocation.y() > -64)
-                new PowerupSpawner(powerup.type, player.getWorld(), playerLocation, true, powerup.time, QuakePlugin.INSTANCE);
+                new PowerupSpawner(powerup.type, player.getWorld(), playerLocation, true, powerup.time);
 
             powerup.timer.cancel();
             state.hud.powerupBoard.update();

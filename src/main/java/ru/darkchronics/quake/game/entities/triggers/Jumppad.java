@@ -22,13 +22,11 @@ import ru.darkchronics.quake.misc.ParticleUtil;
 
 public class Jumppad implements Trigger {
     static BoundingBox boundingBox = new BoundingBox(-0.5, 0, -0.5, 0.5, 1, 0.5);
-    private QuakePlugin plugin;
     private Vector launchVec;
     private Marker marker;
     private boolean triggered;
     private BukkitRunnable particleEmitter;
-    public Jumppad(Location loc, Vector launchVec, QuakePlugin plugin) {
-        this.plugin = plugin;
+    public Jumppad(Location loc, Vector launchVec) {
         this.marker = (Marker) loc.getWorld().spawnEntity(loc, EntityType.MARKER);
         this.launchVec = launchVec;
 
@@ -39,12 +37,11 @@ public class Jumppad implements Trigger {
         pdc.set(new NamespacedKey("darkchronics-quake", "launch_vec"), PersistentDataType.BYTE_ARRAY, serializedLaunchVec);
 
         this.particleEmitter = this.newParticleEmitter();
-        this.particleEmitter.runTaskTimer(this.plugin, 0, 1);
-        plugin.triggers.add(this);
+        this.particleEmitter.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
-    public Jumppad(Marker marker, QuakePlugin plugin) {
-        this.plugin = plugin;
+    public Jumppad(Marker marker) {
         this.marker = marker;
 
         PersistentDataContainer pdc = this.marker.getPersistentDataContainer();
@@ -52,9 +49,9 @@ public class Jumppad implements Trigger {
         this.launchVec = Vector.fromJOML((Vector3d) SerializationUtils.deserialize(launchVecData));
 
         this.particleEmitter = this.newParticleEmitter();
-        this.particleEmitter.runTaskTimer(this.plugin, 0, 1);
+        this.particleEmitter.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
     private BukkitRunnable newParticleEmitter() {
@@ -87,7 +84,7 @@ public class Jumppad implements Trigger {
                 entity.setVelocity(launchVec);
                 ticks++;
             }
-        }.runTaskTimer(this.plugin, 0, 1);
+        }.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
 
         this.marker.getWorld().playSound(this.marker.getLocation(), "quake.world.jumppad", 1, 1);
         Location iloc = entity.getLocation();
@@ -105,14 +102,14 @@ public class Jumppad implements Trigger {
                 ParticleUtil.drawParticlesCircle(Particle.ELECTRIC_SPARK, loc, (double) iter /2, 32);
                 iter++;
             }
-        }.runTaskTimer(this.plugin, 0, 1);
+        }.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
 
         new BukkitRunnable() {
             @Override
             public void run() {
                 triggered = false;
             }
-        }.runTaskLater(this.plugin, 10);
+        }.runTaskLater(QuakePlugin.INSTANCE, 10);
     }
 
     public void onUnload() {

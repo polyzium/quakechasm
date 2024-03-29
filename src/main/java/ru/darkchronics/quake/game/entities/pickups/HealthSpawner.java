@@ -19,8 +19,8 @@ public class HealthSpawner extends Spawner {
     private ItemStack itemForRespawn;
     private BukkitTask respawnTask;
     private int health;
-    public HealthSpawner(int health, World world, Location location, QuakePlugin plugin) {
-        super(new ItemStack(Material.PORKCHOP), world, location, plugin);
+    public HealthSpawner(int health, World world, Location location) {
+        super(new ItemStack(Material.PORKCHOP), world, location);
 
         ItemStack item = null;
         switch (health) {
@@ -40,23 +40,23 @@ public class HealthSpawner extends Spawner {
 
         this.health = health;
         PersistentDataContainer displayData = display.getPersistentDataContainer();
-        NamespacedKey healthKey = new NamespacedKey(super.plugin, "health");
+        NamespacedKey healthKey = new NamespacedKey(QuakePlugin.INSTANCE, "health");
         displayData.set(healthKey, PersistentDataType.INTEGER, this.health);
 
         super.display.setItemStack(item);
         QEntityUtil.setEntityType(super.display, "health_spawner");
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
-    public HealthSpawner(ItemDisplay display, QuakePlugin plugin) {
-        super(display, plugin);
+    public HealthSpawner(ItemDisplay display) {
+        super(display);
 
         PersistentDataContainer displayData = display.getPersistentDataContainer();
-        NamespacedKey healthKey = new NamespacedKey(super.plugin, "health");
+        NamespacedKey healthKey = new NamespacedKey(QuakePlugin.INSTANCE, "health");
         this.health = displayData.get(healthKey, PersistentDataType.INTEGER);
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
     @Override
@@ -96,7 +96,7 @@ public class HealthSpawner extends Spawner {
             public void run() {
                 respawn();
             }
-        }.runTaskLater(this.plugin, 20*35);
+        }.runTaskLater(QuakePlugin.INSTANCE, 20*35);
     }
 
     @Override

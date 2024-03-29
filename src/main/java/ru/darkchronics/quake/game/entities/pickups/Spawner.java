@@ -11,13 +11,10 @@ import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.game.entities.DisplayPickup;
 
 public abstract class Spawner implements DisplayPickup {
-    QuakePlugin plugin;
     public ItemDisplay display;
     static BoundingBox boundingBox = new BoundingBox(-1, -1, -1, 1, 0, 1);
 
-    public Spawner(ItemStack item, World world, Location location, QuakePlugin plugin) {
-        this.plugin = plugin;
-
+    public Spawner(ItemStack item, World world, Location location) {
         this.display = (ItemDisplay) world.spawnEntity(location, EntityType.ITEM_DISPLAY);
         this.display.setItemStack(item);
 
@@ -28,13 +25,12 @@ public abstract class Spawner implements DisplayPickup {
         this.display.setTeleportDuration(20);
         this.display.setRotation(0, 0);
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
-    public Spawner(ItemDisplay display, QuakePlugin plugin) {
+    public Spawner(ItemDisplay display) {
         assert display != null;
 
-        this.plugin = plugin;
         this.display = display;
 
         // Init rotator
@@ -42,7 +38,7 @@ public abstract class Spawner implements DisplayPickup {
         this.display.setTeleportDuration(20);
         this.display.setRotation(0, 0);
 
-        // Normally here you would plugin.triggers.add(this),
+        // Normally here you would QuakePlugin.INSTANCE.triggers.add(this),
         // but this adds only the super class (i.e. Spawner).
         // Please do so in derived classes instead!
     }

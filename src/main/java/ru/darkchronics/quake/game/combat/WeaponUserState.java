@@ -15,7 +15,6 @@ import java.util.Arrays;
 import static ru.darkchronics.quake.game.combat.WeaponUtil.WEAPONS_NUM;
 
 public class WeaponUserState {
-    private final QuakePlugin plugin;
     private BukkitRunnable shooter;
     private BukkitTask shooterTask;
     private BukkitRunnable clickDetector;
@@ -23,10 +22,6 @@ public class WeaponUserState {
     public int[] ammo = new int[]{100, 0, 0, 0, 0, 0, 0};
     public int[] cooldowns = new int[]{0, 0, 0, 0, 0, 0, 0};
     public BossBar ammoWarning = BossBar.bossBar(Component.text("LOW AMMO WARNING"), 0, BossBar.Color.WHITE, BossBar.Overlay.PROGRESS);
-
-    public WeaponUserState(QuakePlugin plugin) {
-        this.plugin = plugin;
-    }
 
     public void shoot(Player player) {
         /*
@@ -126,7 +121,7 @@ public class WeaponUserState {
                     if (Arrays.stream(cooldowns).allMatch(Integer.valueOf(0)::equals)) cancel();
                 }
             };
-            this.shooterTask = this.shooter.runTaskTimer(this.plugin, 0, 1);
+            this.shooterTask = this.shooter.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
         }
 
         if (this.clickDetector != null)
@@ -138,6 +133,6 @@ public class WeaponUserState {
                 shooting = false;
             }
         };
-        clickDetector.runTaskLater(plugin, 4);
+        clickDetector.runTaskLater(QuakePlugin.INSTANCE, 4);
     }
 }

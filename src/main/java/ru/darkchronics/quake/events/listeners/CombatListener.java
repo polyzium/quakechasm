@@ -32,19 +32,13 @@ import ru.darkchronics.quake.misc.MiscUtil;
 import java.util.*;
 
 public class CombatListener implements Listener {
-    private final QuakePlugin plugin;
-
-    public CombatListener(QuakePlugin plugin) {
-        this.plugin = plugin;
-    }
-
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Player player = event.getPlayer();
         if (player.getInventory().getItemInMainHand().getType() != Material.CARROT_ON_A_STICK) return;
 
-        QuakeUserState state = this.plugin.userStates.get(player);
+        QuakeUserState state = QuakePlugin.INSTANCE.userStates.get(player);
         state.weaponState.shoot(player);
     }
 
@@ -203,7 +197,7 @@ public class CombatListener implements Listener {
         }
 
         if (event.getEntity().getType() != EntityType.PLAYER) return;
-        QuakeUserState state = this.plugin.userStates.get((Player) event.getEntity());
+        QuakeUserState state = QuakePlugin.INSTANCE.userStates.get((Player) event.getEntity());
         state.startHealthDecreaser();
     }
 
@@ -225,7 +219,7 @@ public class CombatListener implements Listener {
         Player player = e.getPlayer();
         ItemStack handItem = player.getInventory().getItemInMainHand().clone();
         ItemMeta itemMeta = handItem.getItemMeta();
-        QuakeUserState userState = plugin.userStates.get(player);
+        QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
         userState.armor = 0;
         if (itemMeta != null && itemMeta.hasCustomModelData() && handItem.getType() == Material.CARROT_ON_A_STICK) {
             int modelData = itemMeta.getCustomModelData();
@@ -246,10 +240,10 @@ public class CombatListener implements Listener {
         }
     }
 
-    public static void sortGun(ItemStack gunItem, Player player, QuakePlugin plugin) {
+    public static void sortGun(ItemStack gunItem, Player player) {
         int modelData = gunItem.getItemMeta().getCustomModelData();
         PlayerInventory inv = player.getInventory();
-        WeaponUserState weaponState = plugin.userStates.get(player).weaponState;
+        WeaponUserState weaponState = QuakePlugin.INSTANCE.userStates.get(player).weaponState;
 
         // Find the gun, regardless of its NBT/PDC
         Optional<ItemStack> foundGun = Arrays.stream(inv.getContents()).filter(Objects::nonNull).filter(
@@ -292,7 +286,7 @@ public class CombatListener implements Listener {
         LivingEntity entity = event.getEntity();
         if (!(item.getItemMeta().hasCustomModelData() && item.getType() == Material.CARROT_ON_A_STICK && entity instanceof Player player)) return;
 
-        sortGun(item, player, this.plugin);
+        sortGun(item, player);
         event.getItem().remove();
         player.playSound(entity, "quake.weapons.pickup", 0.5f,  1f);
         Hud.pickupMessage(player, item.getItemMeta().displayName());

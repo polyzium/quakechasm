@@ -29,8 +29,8 @@ public class ArmorSpawner extends Spawner {
     private ItemStack itemForRespawn;
     private BukkitTask respawnTask;
     private int armor;
-    public ArmorSpawner(int armor, World world, Location location, QuakePlugin plugin) {
-        super(new ItemStack(Material.PORKCHOP), world, location, plugin);
+    public ArmorSpawner(int armor, World world, Location location) {
+        super(new ItemStack(Material.PORKCHOP), world, location);
 
         ItemStack item = null;
         switch (armor) {
@@ -47,28 +47,28 @@ public class ArmorSpawner extends Spawner {
 
         this.armor = armor;
         PersistentDataContainer displayData = display.getPersistentDataContainer();
-        NamespacedKey armorKey = new NamespacedKey(super.plugin, "armor");
+        NamespacedKey armorKey = new NamespacedKey(QuakePlugin.INSTANCE, "armor");
         displayData.set(armorKey, PersistentDataType.INTEGER, this.armor);
 
         super.display.setItemStack(item);
         QEntityUtil.setEntityType(super.display, "armor_spawner");
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
-    public ArmorSpawner(ItemDisplay display, QuakePlugin plugin) {
-        super(display, plugin);
+    public ArmorSpawner(ItemDisplay display) {
+        super(display);
 
         PersistentDataContainer displayData = display.getPersistentDataContainer();
-        NamespacedKey armorKey = new NamespacedKey(super.plugin, "armor");
+        NamespacedKey armorKey = new NamespacedKey(QuakePlugin.INSTANCE, "armor");
         this.armor = displayData.get(armorKey, PersistentDataType.INTEGER);
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
     @Override
     public void onPickup(Player player) {
-        QuakeUserState userState = plugin.userStates.get(player);
+        QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
 
         if (
                 this.display.getItemStack().isEmpty() ||
@@ -96,7 +96,7 @@ public class ArmorSpawner extends Spawner {
             public void run() {
                 respawn();
             }
-        }.runTaskLater(this.plugin, 20*25);
+        }.runTaskLater(QuakePlugin.INSTANCE, 20*25);
     }
 
     @Override

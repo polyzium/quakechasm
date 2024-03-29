@@ -19,17 +19,17 @@ import java.util.Objects;
 public class ItemSpawner extends Spawner {
     private ItemStack itemForRespawn;
     private BukkitTask respawnTask;
-    public ItemSpawner(ItemStack item, World world, Location location, QuakePlugin plugin) {
-        super(item, world, location, plugin);
+    public ItemSpawner(ItemStack item, World world, Location location) {
+        super(item, world, location);
         QEntityUtil.setEntityType(super.display, "item_spawner");
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
-    public ItemSpawner(ItemDisplay display, QuakePlugin plugin) {
-        super(display, plugin);
+    public ItemSpawner(ItemDisplay display) {
+        super(display);
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
     public void onPickup(Player player) {
@@ -42,7 +42,7 @@ public class ItemSpawner extends Spawner {
         PlayerInventory inv = player.getInventory();
         // Special case for guns (uses carrot-on-a-stick as a base)
         if (item.getItemMeta().hasCustomModelData() && item.getType() == Material.CARROT_ON_A_STICK) {
-            CombatListener.sortGun(item, player, this.plugin);
+            CombatListener.sortGun(item, player);
         } else {
             inv.addItem(item);
         }
@@ -60,7 +60,7 @@ public class ItemSpawner extends Spawner {
             public void run() {
                 respawn();
             }
-        }.runTaskLater(this.plugin, respawnTimeTicks);
+        }.runTaskLater(QuakePlugin.INSTANCE, respawnTimeTicks);
     }
 
     @Override

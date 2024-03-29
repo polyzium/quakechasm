@@ -33,7 +33,7 @@ public class QuakeUserState {
 
     public QuakeUserState(Player player) {
         this.player = player;
-        this.weaponState = new WeaponUserState(QuakePlugin.INSTANCE);
+        this.weaponState = new WeaponUserState();
         this.hud = new Hud(this);
     }
 
@@ -42,7 +42,7 @@ public class QuakeUserState {
     }
 
     public void reset() {
-        this.weaponState = new WeaponUserState(QuakePlugin.INSTANCE);
+        this.weaponState = new WeaponUserState();
         this.armor = 0;
         for (Powerup activePowerup : this.activePowerups) {
             activePowerup.timer.cancel();

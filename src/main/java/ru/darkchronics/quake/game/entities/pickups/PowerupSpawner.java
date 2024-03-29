@@ -27,30 +27,30 @@ public class PowerupSpawner extends Spawner {
     private boolean isDrop;
     private int duration;
     private Match belongingMatch;
-    public PowerupSpawner(PowerupType type, World world, Location location, boolean isDrop, int duration, QuakePlugin plugin) {
-        super(new ItemStack(Material.TOTEM_OF_UNDYING), world, location, plugin);
+    public PowerupSpawner(PowerupType type, World world, Location location, boolean isDrop, int duration) {
+        super(new ItemStack(Material.TOTEM_OF_UNDYING), world, location);
         this.type = type;
         this.isDrop = isDrop;
         this.duration = duration;
 
         PersistentDataContainer displayData = display.getPersistentDataContainer();
-        NamespacedKey typeKey = new NamespacedKey(super.plugin, "type");
+        NamespacedKey typeKey = new NamespacedKey(QuakePlugin.INSTANCE, "type");
         displayData.set(typeKey, PersistentDataType.STRING, this.type.toString());
 
         if (!isDrop)
             QEntityUtil.setEntityType(super.display, "powerup_spawner");
     }
 
-    public PowerupSpawner(ItemDisplay display, QuakePlugin plugin) {
-        super(display, plugin);
+    public PowerupSpawner(ItemDisplay display) {
+        super(display);
 
         PersistentDataContainer displayData = display.getPersistentDataContainer();
-        NamespacedKey typeKey = new NamespacedKey(super.plugin, "type");
+        NamespacedKey typeKey = new NamespacedKey(QuakePlugin.INSTANCE, "type");
         this.type = PowerupType.valueOf(displayData.get(typeKey, PersistentDataType.STRING));
         this.isDrop = false;
         this.duration = 30;
 
-        plugin.triggers.add(this);
+        QuakePlugin.INSTANCE.triggers.add(this);
     }
 
     public static void doPowerup(Player player, PowerupType type, int time) {
@@ -98,7 +98,7 @@ public class PowerupSpawner extends Spawner {
             public void run() {
                 respawn();
             }
-        }.runTaskLater(this.plugin, RESPAWN_TIME);
+        }.runTaskLater(QuakePlugin.INSTANCE, RESPAWN_TIME);
         else
             // Despawn
             this.display.remove();
@@ -132,7 +132,7 @@ public class PowerupSpawner extends Spawner {
             public void run() {
                 respawn();
             }
-        }.runTaskLater(this.plugin, RESPAWN_TIME);
+        }.runTaskLater(QuakePlugin.INSTANCE, RESPAWN_TIME);
     }
 
     public void matchCleanup() {

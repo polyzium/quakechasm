@@ -101,28 +101,28 @@ public class QuakePlugin extends JavaPlugin {
         String entityType = QEntityUtil.getEntityType(entity);
         switch (entityType) {
             case "item_spawner":
-                new ItemSpawner((ItemDisplay) entity, this);
+                new ItemSpawner((ItemDisplay) entity);
                 break;
             case "health_spawner":
-                new HealthSpawner((ItemDisplay) entity, this);
+                new HealthSpawner((ItemDisplay) entity);
                 break;
             case "armor_spawner":
-                new ArmorSpawner((ItemDisplay) entity, this);
+                new ArmorSpawner((ItemDisplay) entity);
                 break;
             case "ammo_spawner":
-                new AmmoSpawner((ItemDisplay) entity, this);
+                new AmmoSpawner((ItemDisplay) entity);
                 break;
             case "powerup_spawner":
-                new PowerupSpawner((ItemDisplay) entity, this);
+                new PowerupSpawner((ItemDisplay) entity);
                 break;
             case "ctf_flag":
                 new CTFFlag((ItemDisplay) entity);
                 break;
             case "jumppad":
-                new Jumppad((Marker) entity, this);
+                new Jumppad((Marker) entity);
                 break;
             case "portal":
-                new Portal((Marker) entity, this);
+                new Portal((Marker) entity);
                 break;
             default:
                 getLogger().warning("Unknown entity type "+entityType+", ignoring.");
@@ -303,14 +303,17 @@ public class QuakePlugin extends JavaPlugin {
         getLogger().severe("!!! FOR INTERNAL USE ONLY !!!");
         getLogger().severe("!!! IF YOU LEAK THIS, YOU ARE A PIECE OF SHIT !!!");
 
+        // singleton pattern
+        INSTANCE = this;
+
         // commands
-        Commands.initQuakeCommand(this);
+        Commands.initQuakeCommand();
 
         // events
         getServer().getPluginManager().registerEvents(new MiscListener(), this);
         getServer().getPluginManager().registerEvents(new ChatListener(), this);
-        getServer().getPluginManager().registerEvents(new TriggerListener(this), this);
-        getServer().getPluginManager().registerEvents(new CombatListener(this), this);
+        getServer().getPluginManager().registerEvents(new TriggerListener(), this);
+        getServer().getPluginManager().registerEvents(new CombatListener(), this);
 
         // other stuff
         getLogger().info("Initializing match manager");
@@ -323,9 +326,6 @@ public class QuakePlugin extends JavaPlugin {
         this.loadTriggers();
         this.startRotatingPickups();
         this.startHudUpdater();
-        
-        // singleton pattern
-        INSTANCE = this;
     }
 
     @Override
