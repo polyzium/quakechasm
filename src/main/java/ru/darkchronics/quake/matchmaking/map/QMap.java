@@ -81,7 +81,7 @@ public class QMap {
                 .toList();
 
         Spawnpoint spawnPoint = allowedSpawnpoints.get(
-                (int) (Math.random() * (this.spawnPoints.size() - 1))
+                (int) (Math.random() * (allowedSpawnpoints.size() - 1))
         );
 
         Location spLoc = spawnPoint.pos;
