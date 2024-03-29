@@ -142,6 +142,10 @@ public class CTFMatch extends Match {
     }
 
     public void end() {
+        for (Player player : this.players.keySet()) {
+            player.hideBossBar(this.infoBar);
+        }
+
         this.map.cleanup();
         super.end();
     }
