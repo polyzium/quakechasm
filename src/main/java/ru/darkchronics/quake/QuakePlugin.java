@@ -100,8 +100,12 @@ public class QuakePlugin extends JavaPlugin {
 
         String entityType = QEntityUtil.getEntityType(entity);
         switch (entityType) {
+            case "weapon_spawner":
+                new WeaponSpawner((ItemDisplay) entity);
+                break;
             case "item_spawner":
-                new ItemSpawner((ItemDisplay) entity);
+                getLogger().warning("ItemSpawner is deprecated, converting to WeaponSpawner");
+                WeaponSpawner.convert((ItemDisplay) entity);
                 break;
             case "health_spawner":
                 new HealthSpawner((ItemDisplay) entity);

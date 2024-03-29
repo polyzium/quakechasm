@@ -25,6 +25,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.util.Vector;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
+import ru.darkchronics.quake.game.combat.WeaponType;
 import ru.darkchronics.quake.game.combat.WeaponUtil;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
@@ -350,26 +351,42 @@ public abstract class Commands {
                         })
                 );
 
-        CommandAPICommand itemSpawnerCmd = new CommandAPICommand("itemspawner")
-                .withSubcommand(new CommandAPICommand("create"))
-                .executesPlayer((player, args) -> {
-                    if (player.getInventory().getItemInMainHand().isEmpty()) {
-                        player.sendMessage("§cSelect an item first!");
-                        return;
-                    }
-                    Location loc = player.getLocation();
-                    loc.set(
-                            Math.floor(loc.x())+0.5,
-                            Math.floor(loc.y()) + 1,
-                            Math.floor(loc.z())+0.5
-                    );
-                    new ItemSpawner(
-                            player.getInventory().getItemInMainHand(),
-                            player.getWorld(),
-                            loc
-                    );
-                    player.sendMessage(String.format("Made an ItemSpawner at %.1f %.1f %.1f", loc.x(), loc.y(), loc.z()));
-                });
+        CommandAPICommand weaponSpawnerCmd = new CommandAPICommand("weaponspawner")
+                .withSubcommand(new CommandAPICommand("create")
+                        .withArguments(new StringArgument("weapon").includeSuggestions(ArgumentSuggestions.strings(
+                                "machinegun",
+                                "shotgun",
+                                "rocket_launcher",
+                                "lightning_gun",
+                                "railgun",
+                                "plasma_gun",
+                                "bfg"
+                        )))
+                        .executesPlayer((player, args) -> {
+                            int weaponIndex = switch ((String) args.get("weapon")) {
+                                case "machinegun" -> WeaponType.MACHINEGUN;
+                                case "shotgun" -> WeaponType.SHOTGUN;
+                                case "rocket_launcher" -> WeaponType.ROCKET_LAUNCHER;
+                                case "lightning_gun" -> WeaponType.LIGHTNING_GUN;
+                                case "railgun" -> WeaponType.RAILGUN;
+                                case "plasma_gun" -> WeaponType.PLASMA_GUN;
+                                case "bfg" -> WeaponType.BFG;
+                                default -> throw new IllegalStateException("Weapon out of range");
+                            };
+
+                            Location loc = player.getLocation();
+                            loc.set(
+                                    Math.floor(loc.x()) + 0.5,
+                                    Math.floor(loc.y()) + 1,
+                                    Math.floor(loc.z()) + 0.5
+                            );
+                            new WeaponSpawner(
+                                    weaponIndex,
+                                    player.getWorld(),
+                                    loc
+                            );
+                            player.sendMessage(String.format("Made a WeaponSpawner at %.1f %.1f %.1f", loc.x(), loc.y(), loc.z()));
+                        }));
 
         CommandAPICommand reloadCmd = new CommandAPICommand("reload")
                 .executes((sender, args) -> {
@@ -642,7 +659,7 @@ public abstract class Commands {
         new CommandAPICommand("quake")
                 .withAliases("dcquake")
                 .withSubcommands(
-                        itemSpawnerCmd,
+                        weaponSpawnerCmd,
                         healthSpawnerCmd,
                         ammoSpawnerCmd,
                         armorSpawnerCmd,
