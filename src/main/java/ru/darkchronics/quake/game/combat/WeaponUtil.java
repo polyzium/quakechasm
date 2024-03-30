@@ -244,7 +244,7 @@ public abstract class WeaponUtil {
                     return;
                 }
 
-                if (this.ticks > 100) {
+                if (this.ticks > 200) {
                     projectile.remove();
                     this.cancel();
                     return;
@@ -309,7 +309,7 @@ public abstract class WeaponUtil {
                     return;
                 }
 
-                if (this.ticks > 100) {
+                if (this.ticks > 200) {
                     projectile.remove();
                     this.cancel();
                     return;
