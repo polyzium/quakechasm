@@ -181,6 +181,19 @@ public abstract class WeaponUtil {
         victim.setVelocity(victim.getVelocity().add(from.getDirection().multiply(power)));
     }
 
+    public static boolean hasLineOfSight(Entity viewer, Entity target) {
+        Location viewerLocation = viewer.getLocation();
+        Location targetLocation = target.getLocation();
+        World world = viewer.getWorld();
+
+        Vector direction = targetLocation.toVector().subtract(viewerLocation.toVector()).normalize();
+
+        double maxDistance = viewerLocation.distance(targetLocation)+1;
+        RayTraceResult rayTraceResult = world.rayTrace(viewerLocation, direction, maxDistance, FluidCollisionMode.NEVER, true, 0, null);
+
+        return rayTraceResult != null && rayTraceResult.getHitEntity() == target;
+    }
+
     // Actual weapons are here
     public static void fireMachinegun(Player player) {
 //        player.getWorld().playSound(player, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 0.5f, 0.5f);
@@ -399,9 +412,8 @@ public abstract class WeaponUtil {
                 if (this.ticks % 2 == 0) {
 //                Entity attacker = (Entity) projectile.getShooter();
                     for (Entity entity : ploc.getNearbyEntities(10, 10, 10)) {
-                        if (!(entity instanceof LivingEntity) || entity == player) continue;
+                        if (!(entity instanceof LivingEntity livingEntity) || !hasLineOfSight(projectile, livingEntity) || entity == player) continue;
 
-                        LivingEntity livingEntity = (LivingEntity) entity;
                         damageCustom(livingEntity, 1, player, DamageCause.BFG_RAY);
                         spawnParticlesLine(ploc, livingEntity.getEyeLocation(), Particle.ELECTRIC_SPARK);
                         livingEntity.getWorld().playSound(livingEntity.getLocation(), "quake.weapons.bfg.laser", 0.5f, 1);
