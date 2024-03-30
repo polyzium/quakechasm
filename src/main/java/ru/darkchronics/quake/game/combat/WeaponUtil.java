@@ -8,8 +8,10 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import ru.darkchronics.quake.QuakePlugin;
+import ru.darkchronics.quake.QuakeUserState;
 import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
+import ru.darkchronics.quake.matchmaking.Team;
 
 import java.util.function.BiConsumer;
 
@@ -410,9 +412,24 @@ public abstract class WeaponUtil {
                 ploc.getWorld().spawnParticle(Particle.COMPOSTER, ploc, 4, 0.5,0.5,0.5, 1);
 
                 if (this.ticks % 2 == 0) {
-//                Entity attacker = (Entity) projectile.getShooter();
                     for (Entity entity : ploc.getNearbyEntities(10, 10, 10)) {
                         if (!(entity instanceof LivingEntity livingEntity) || !hasLineOfSight(projectile, livingEntity) || entity == player) continue;
+                        if (livingEntity instanceof Player victim) {
+                            QuakeUserState attackerState = QuakePlugin.INSTANCE.userStates.get(player);
+                            QuakeUserState victimState = QuakePlugin.INSTANCE.userStates.get(victim);
+
+                            if (victimState.currentMatch != null) {
+                                if (!(
+                                    victimState.currentMatch == attackerState.currentMatch && // same match
+                                    (
+                                            victimState.currentMatch.getTeamOfPlayer(victim) != attackerState.currentMatch.getTeamOfPlayer(player) || // different teams
+                                                    (victimState.currentMatch.getTeamOfPlayer(victim) == Team.FREE && attackerState.currentMatch.getTeamOfPlayer(player) == Team.FREE) // ...or free
+                                    )
+                                )) {
+                                    continue;
+                                }
+                            }
+                        }
 
                         damageCustom(livingEntity, 1, player, DamageCause.BFG_RAY);
                         spawnParticlesLine(ploc, livingEntity.getEyeLocation(), Particle.ELECTRIC_SPARK);
