@@ -233,7 +233,7 @@ public class CTFMatch extends Match {
                     );
 
                 flag.respawn();
-                return;
+                break;
             }
         }
 
