@@ -1,6 +1,7 @@
 package ru.darkchronics.quake.events.listeners;
 
 import com.destroystokyo.paper.event.entity.EntityKnockbackByEntityEvent;
+import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
@@ -17,6 +18,7 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -30,6 +32,7 @@ import ru.darkchronics.quake.hud.Hud;
 import ru.darkchronics.quake.misc.MiscUtil;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class CombatListener implements Listener {
     @EventHandler
@@ -143,6 +146,8 @@ public class CombatListener implements Listener {
         assert userState != null;
 
         // Calculate armor factor
+        // But first, cancel vanilla armor
+        event.setDamage(EntityDamageEvent.DamageModifier.ARMOR, 0);
         double finalDamage = event.getDamage();
         if (userState.armor > 0) {
             finalDamage /= 3;
@@ -180,6 +185,34 @@ public class CombatListener implements Listener {
         }
 
         userState.lastDamage = null;
+    }
+
+    // Do not take durability from armor. This will be used for teams later on
+    @EventHandler
+    public void onArmorChange(PlayerArmorChangeEvent event) {
+        if (Stream.of(Material.LEATHER_BOOTS, Material.LEATHER_LEGGINGS, Material.LEATHER_CHESTPLATE).allMatch(material -> event.getOldItem().getType() != material))
+            return;
+
+        Damageable oldMeta = (Damageable) event.getOldItem().getItemMeta();
+        Damageable newMeta = (Damageable) event.getNewItem().getItemMeta();
+
+        // FIXME: I didn't use the "or" operator here because nullpointerexception
+        if (newMeta == null) {
+            return;
+        } else if (oldMeta.getDamage() >= newMeta.getDamage()) {
+            return;
+        }
+
+        newMeta.setDamage(oldMeta.getDamage());
+        ItemStack newItem = event.getNewItem();
+        newItem.setItemMeta(newMeta);
+
+        switch (event.getSlotType()) {
+            case HEAD -> event.getPlayer().getInventory().setHelmet(newItem);
+            case CHEST -> event.getPlayer().getInventory().setChestplate(newItem);
+            case LEGS -> event.getPlayer().getInventory().setLeggings(newItem);
+            case FEET -> event.getPlayer().getInventory().setBoots(newItem);
+        }
     }
 
     // No hunger
