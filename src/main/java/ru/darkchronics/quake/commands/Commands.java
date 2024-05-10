@@ -551,7 +551,7 @@ public abstract class Commands {
                                         map.bounds.getMax().getBlockZ()
                                 ));
 
-                                player.sendMessage("§aSelection set to map bounds.");
+                                player.sendMessage("Selection set to map bounds.");
 //                            } catch (IncompleteRegionException e) {
 //                                throw new RuntimeException(e);
 //                            }
@@ -561,12 +561,14 @@ public abstract class Commands {
 
         StringArgument matchModeArg = (StringArgument) new StringArgument("mode")
                 .includeSuggestions(ArgumentSuggestions.strings("debug", "ffa", "tdm", "ctf"));
+        IntegerArgument needPlayersArg = new IntegerArgument("needPlayers");
         CommandAPICommand matchCmd = new CommandAPICommand("match")
                 .withSubcommand(new CommandAPICommand("create")
-                        .withArguments(matchModeArg, new StringArgument("mapName"))
+                        .withArguments(matchModeArg, needPlayersArg, new StringArgument("mapName"))
                         .executes((sender, args) -> {
                             String mode = (String) args.get("mode");
                             String mapName = (String) args.get("mapName");
+                            Integer needPlayers = (Integer) args.get("needPlayers");
 
                             QMap map = QuakePlugin.INSTANCE.getMap(mapName);
                             if (map == null) {
@@ -595,6 +597,7 @@ public abstract class Commands {
 
                             MatchManager matchManager = QuakePlugin.INSTANCE.matchManager;
                             Match match = matchManager.newMatch(matchFactory, map);
+                            match.setNeedPlayers(needPlayers);
                             sender.sendMessage("Made a new "+matchFactory.getName()+" match with index "+ matchManager.matches.indexOf(match));
                         })
                 )
