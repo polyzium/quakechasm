@@ -132,15 +132,20 @@ public class QMap {
 
     public void cleanup() {
         Collection<Entity> entities = this.world.getNearbyEntities(this.bounds);
+        ArrayList<PowerupSpawner> powerupsForCleanup = new ArrayList<>();
         for (Trigger trigger : QuakePlugin.INSTANCE.triggers) {
             if (entities.contains(trigger.getEntity())) {
                 if (trigger instanceof PowerupSpawner powerupSpawner) {
-                    powerupSpawner.matchCleanup();
+                    powerupsForCleanup.add(powerupSpawner);
                 } else if (trigger instanceof CTFFlag flag) {
                     flag.cleanup();
                 } else if (trigger instanceof Spawner spawner)
                     spawner.respawn();
             }
+        }
+
+        for (PowerupSpawner powerupSpawner : powerupsForCleanup) {
+            powerupSpawner.matchCleanup();
         }
 
         for (Chunk chunk : this.getChunks()) {
