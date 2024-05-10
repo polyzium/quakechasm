@@ -19,8 +19,8 @@ import java.time.Duration;
 import java.util.*;
 
 public class FFAMatch extends Match {
-    private static final int FRAGLIMIT = 15;
-    private static final int NEED_PLAYERS = 1;
+    private int fraglimit = 10;
+    private int needPlayers = 2;
     private HashMap<Player, Integer> scores = new HashMap<>();
     private boolean started = false;
     private BukkitTask warmupTask = null;
@@ -36,6 +36,16 @@ public class FFAMatch extends Match {
     }
 
     @Override
+    public void setScoreLimit(int scoreLimit) {
+        this.fraglimit = scoreLimit;
+    }
+
+    @Override
+    public void setNeedPlayers(int needPlayers) {
+        this.needPlayers = needPlayers;
+    }
+
+    @Override
     public void join(Player player) {
         super.join(player);
         scores.put(player, 0);
@@ -43,7 +53,7 @@ public class FFAMatch extends Match {
         this.updateScoreboard();
 
         //noinspection SizeReplaceableByIsEmpty
-        if (players.size() >= NEED_PLAYERS && this.warmupTask == null && !started) {
+        if (players.size() >= needPlayers && this.warmupTask == null && !started) {
             warmup();
         }
     }
@@ -101,7 +111,7 @@ public class FFAMatch extends Match {
         this.updateScoreboard();
         this.showTitle(Title.title(
                 Component.text("Fight!"),
-                Component.text("Get "+FRAGLIMIT+" frags").color(TextColor.color(0xff0000)),
+                Component.text("Get "+fraglimit+" frags").color(TextColor.color(0xff0000)),
                 Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofMillis(500))
         ));
     }
@@ -216,7 +226,7 @@ public class FFAMatch extends Match {
         Player winningPlayer = winningPlayerEntry.getKey();
         int winningScore = winningPlayerEntry.getValue();
 
-        if (winningScore == FRAGLIMIT) {
+        if (winningScore == fraglimit) {
             this.showTitle(Title.title(
                     Component.text(winningPlayer.getName() + " wins"),
                     Component.empty(),

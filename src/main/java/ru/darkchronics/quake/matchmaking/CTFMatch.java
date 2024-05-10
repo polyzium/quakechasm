@@ -25,8 +25,8 @@ import java.time.Duration;
 import java.util.*;
 
 public class CTFMatch extends Match {
-    private static final int CAPTURELIMIT = 5;
-    private static final int NEED_PLAYERS = 2;
+    private int capturelimit = 10;
+    private int needPlayers = 2;
     @SuppressWarnings("FieldMayBeFinal")
     private HashMap<Player, Integer> scores = new HashMap<>();
     @SuppressWarnings("FieldMayBeFinal")
@@ -53,6 +53,16 @@ public class CTFMatch extends Match {
     }
 
     @Override
+    public void setScoreLimit(int scoreLimit) {
+        this.capturelimit = scoreLimit;
+    }
+
+    @Override
+    public void setNeedPlayers(int needPlayers) {
+        this.needPlayers = needPlayers;
+    }
+
+    @Override
     public void join(Player player) {
         super.join(player);
         scores.put(player, 0);
@@ -68,7 +78,7 @@ public class CTFMatch extends Match {
 
         this.updateScoreboard();
 
-        if (players.size() >= NEED_PLAYERS && this.warmupTask == null && !started) {
+        if (players.size() >= needPlayers && this.warmupTask == null && !started) {
             warmup();
         }
     }
@@ -136,7 +146,7 @@ public class CTFMatch extends Match {
         this.updateScoreboard();
         this.showTitle(Title.title(
                 Component.text("Fight!"),
-                Component.text("Capture the enemy flag "+ CAPTURELIMIT +" times").color(TextColor.color(0xff0000)),
+                Component.text("Capture the enemy flag "+ capturelimit +" times").color(TextColor.color(0xff0000)),
                 Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofMillis(500))
         ));
     }
@@ -293,7 +303,7 @@ public class CTFMatch extends Match {
         else if (captures[1] > captures[0]) // blue is leading
             winningTeam = Component.text("BLUE").color(TextColor.color(Team.Colors.get(Team.BLUE)));
 
-        if (captures[0] == CAPTURELIMIT || captures[1] == CAPTURELIMIT) { // red or blue
+        if (captures[0] == capturelimit || captures[1] == capturelimit) { // red or blue
             this.showTitle(Title.title(
                     Component.text("Team ")
                             .append(winningTeam)

@@ -51,6 +51,9 @@ public abstract class Match implements ForwardingAudience {
     public Team getTeamOfPlayer(Player player) {
           return this.players.get(player);
     }
+    // Implementation-dependent methods, use at your own discretion
+    public abstract void setScoreLimit(int scoreLimit);
+    public abstract void setNeedPlayers(int needPlayers);
 
     public void join(Player player) {
         Team team = this.assignTeam(player);

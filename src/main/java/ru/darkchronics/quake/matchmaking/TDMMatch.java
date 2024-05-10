@@ -17,8 +17,8 @@ import java.time.Duration;
 import java.util.*;
 
 public class TDMMatch extends Match {
-    private static final int FRAGLIMIT = 5;
-    private static final int NEED_PLAYERS = 4;
+    private int fraglimit = 10;
+    private int needPlayers = 2;
     @SuppressWarnings("FieldMayBeFinal")
     private HashMap<Player, Integer> scores = new HashMap<>();
     @SuppressWarnings("FieldMayBeFinal")
@@ -37,6 +37,16 @@ public class TDMMatch extends Match {
     }
 
     @Override
+    public void setScoreLimit(int scoreLimit) {
+        this.fraglimit = scoreLimit;
+    }
+
+    @Override
+    public void setNeedPlayers(int needPlayers) {
+        this.needPlayers = needPlayers;
+    }
+
+    @Override
     public void join(Player player) {
         super.join(player);
         scores.put(player, 0);
@@ -52,7 +62,7 @@ public class TDMMatch extends Match {
         this.updateScoreboard();
 
         //noinspection SizeReplaceableByIsEmpty
-        if (players.size() >= NEED_PLAYERS && this.warmupTask == null && !started) {
+        if (players.size() >= needPlayers && this.warmupTask == null && !started) {
             warmup();
         }
     }
@@ -115,7 +125,7 @@ public class TDMMatch extends Match {
         this.updateScoreboard();
         this.showTitle(Title.title(
                 Component.text("Fight!"),
-                Component.text("Get "+FRAGLIMIT+" frags").color(TextColor.color(0xff0000)),
+                Component.text("Get "+fraglimit+" frags").color(TextColor.color(0xff0000)),
                 Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofMillis(500))
         ));
     }
@@ -210,7 +220,7 @@ public class TDMMatch extends Match {
         else if (teamScores[1] > teamScores[0]) // blue leads
             winningTeam = Component.text("BLUE").color(TextColor.color(Team.Colors.get(Team.BLUE)));
 
-        if (teamScores[0] == FRAGLIMIT || teamScores[1] == FRAGLIMIT) { // red or blue hits the fraglimit
+        if (teamScores[0] == fraglimit || teamScores[1] == fraglimit) { // red or blue hits the fraglimit
             this.showTitle(Title.title(
                     Component.text("Team ")
                             .append(winningTeam)

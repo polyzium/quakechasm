@@ -32,6 +32,17 @@ public class DebugMatch extends Match {
     public String getName() {
         return getNameStatic();
     }
+
+    @Override
+    public void setScoreLimit(int scoreLimit) {
+        // no-op
+    }
+
+    @Override
+    public void setNeedPlayers(int needPlayers) {
+        // no-op
+    }
+
     @Override
     public void onDeath(Player victim, Entity attacker, DamageCause cause) {
         this.sendMessage(Component.text("onDeath(...) called"));
