@@ -1,28 +1,24 @@
 package ru.darkchronics.quake.matchmaking.map;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.util.BoundingBox;
-import org.bukkit.util.Vector;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.game.entities.Trigger;
 import ru.darkchronics.quake.game.entities.pickups.CTFFlag;
 import ru.darkchronics.quake.game.entities.pickups.PowerupSpawner;
 import ru.darkchronics.quake.game.entities.pickups.Spawner;
-import ru.darkchronics.quake.matchmaking.CTFMatch;
-import ru.darkchronics.quake.matchmaking.Match;
-import ru.darkchronics.quake.matchmaking.MatchManager;
+import ru.darkchronics.quake.matchmaking.matches.CTFMatch;
+import ru.darkchronics.quake.matchmaking.matches.Match;
+import ru.darkchronics.quake.matchmaking.matches.MatchManager;
 import ru.darkchronics.quake.matchmaking.Team;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static ru.darkchronics.quake.misc.MiscUtil.chunkIntersectsBoundingBox;
 

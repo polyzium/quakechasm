@@ -1,8 +1,7 @@
 package ru.darkchronics.quake.matchmaking.factory;
 
-import ru.darkchronics.quake.matchmaking.FFAMatch;
-import ru.darkchronics.quake.matchmaking.Match;
-import ru.darkchronics.quake.matchmaking.TDMMatch;
+import ru.darkchronics.quake.matchmaking.matches.Match;
+import ru.darkchronics.quake.matchmaking.matches.TDMMatch;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 
 public class TDMMatchFactory implements MatchFactory {

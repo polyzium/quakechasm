@@ -1,10 +1,9 @@
-package ru.darkchronics.quake.matchmaking;
+package ru.darkchronics.quake.matchmaking.matches;
 
 import org.bukkit.Bukkit;
 import ru.darkchronics.quake.matchmaking.factory.MatchFactory;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
 public class MatchManager {

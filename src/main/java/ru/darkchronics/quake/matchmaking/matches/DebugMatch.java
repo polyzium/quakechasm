@@ -1,10 +1,11 @@
-package ru.darkchronics.quake.matchmaking;
+package ru.darkchronics.quake.matchmaking.matches;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import ru.darkchronics.quake.game.combat.DamageCause;
+import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 
 import java.util.List;

@@ -13,7 +13,7 @@ import ru.darkchronics.quake.QuakeUserState;
 import ru.darkchronics.quake.game.entities.DisplayPickup;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
 import ru.darkchronics.quake.hud.Hud;
-import ru.darkchronics.quake.matchmaking.CTFMatch;
+import ru.darkchronics.quake.matchmaking.matches.CTFMatch;
 import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 

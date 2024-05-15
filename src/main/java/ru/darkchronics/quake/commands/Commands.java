@@ -1,21 +1,15 @@
 package ru.darkchronics.quake.commands;
 
-import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.IncompleteRegionException;
-import com.sk89q.worldedit.LocalSession;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
-import com.sk89q.worldedit.bukkit.BukkitPlayer;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.Region;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.*;
-import org.apache.commons.lang.StringUtils;
-import org.bukkit.util.BoundingBox;
-import ru.darkchronics.fastboard.adventure.FastBoard;
-import joptsimple.internal.Strings;
 import net.kyori.adventure.key.Key;
+import org.bukkit.util.BoundingBox;
+import joptsimple.internal.Strings;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -33,21 +27,18 @@ import ru.darkchronics.quake.game.entities.Trigger;
 import ru.darkchronics.quake.game.entities.pickups.*;
 import ru.darkchronics.quake.game.entities.triggers.Jumppad;
 import ru.darkchronics.quake.game.entities.triggers.Portal;
-import ru.darkchronics.quake.hud.Hud;
-import ru.darkchronics.quake.matchmaking.CTFMatch;
-import ru.darkchronics.quake.matchmaking.Match;
-import ru.darkchronics.quake.matchmaking.MatchManager;
+import ru.darkchronics.quake.matchmaking.matches.Match;
+import ru.darkchronics.quake.matchmaking.matches.MatchManager;
 import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.factory.*;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 import ru.darkchronics.quake.matchmaking.map.Spawnpoint;
 import ru.darkchronics.quake.misc.MiscUtil;
 import ru.darkchronics.quake.misc.ParticleUtil;
+import ru.darkchronics.quake.misc.TableBuilder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public abstract class Commands {
    
@@ -649,14 +640,12 @@ public abstract class Commands {
 
         CommandAPICommand test = new CommandAPICommand("test")
                 .executesPlayer((player, args) -> {
-                    CTFMatch currentMatch = (CTFMatch) QuakePlugin.INSTANCE.userStates.get(player)
-                            .currentMatch;
+                    TableBuilder table = new TableBuilder();
 
-                    currentMatch
-                            .getBlueFlag()
-                            .getDisplay()
-                            .setItemStack(null);
-                    new CTFFlag(Team.BLUE, true, currentMatch, new Location(player.getWorld(), -1012, 50, -1));
+                    table.addRow("Name", "Score");
+                    table.addRow("Polyzium7", "1");
+
+                    player.sendMessage(Component.text(table.build()).font(Key.key("mono")));
                 });
 
         new CommandAPICommand("quake")

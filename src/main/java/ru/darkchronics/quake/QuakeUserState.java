@@ -13,7 +13,7 @@ import ru.darkchronics.quake.game.combat.*;
 import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.hud.Hud;
-import ru.darkchronics.quake.matchmaking.Match;
+import ru.darkchronics.quake.matchmaking.matches.Match;
 import ru.darkchronics.quake.misc.MiscUtil;
 
 import java.util.ArrayList;

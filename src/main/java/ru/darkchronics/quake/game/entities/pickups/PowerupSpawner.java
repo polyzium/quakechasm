@@ -17,7 +17,7 @@ import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
 import ru.darkchronics.quake.hud.Hud;
-import ru.darkchronics.quake.matchmaking.Match;
+import ru.darkchronics.quake.matchmaking.matches.Match;
 
 public class PowerupSpawner extends Spawner {
     private static final int RESPAWN_TIME = 20*60;

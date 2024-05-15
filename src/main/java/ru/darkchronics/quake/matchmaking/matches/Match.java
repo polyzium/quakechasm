@@ -1,4 +1,4 @@
-package ru.darkchronics.quake.matchmaking;
+package ru.darkchronics.quake.matchmaking.matches;
 
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.audience.ForwardingAudience;
@@ -14,6 +14,7 @@ import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
 import ru.darkchronics.quake.game.combat.DamageCause;
 import ru.darkchronics.quake.game.combat.DeathMessages;
+import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 import ru.darkchronics.quake.misc.MiscUtil;
 import ru.darkchronics.quake.misc.Pair;

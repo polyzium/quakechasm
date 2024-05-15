@@ -1,4 +1,4 @@
-package ru.darkchronics.quake.matchmaking;
+package ru.darkchronics.quake.matchmaking.matches;
 
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
@@ -19,6 +19,7 @@ import ru.darkchronics.quake.game.combat.DamageCause;
 import ru.darkchronics.quake.game.entities.Trigger;
 import ru.darkchronics.quake.game.entities.pickups.CTFFlag;
 import ru.darkchronics.quake.hud.Icons;
+import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 
 import java.time.Duration;
