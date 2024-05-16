@@ -598,6 +598,10 @@ public abstract class Commands {
 
                             MatchManager matchManager = QuakePlugin.INSTANCE.matchManager;
                             Match match = matchManager.newMatch(matchFactory, map);
+                            if (match == null) {
+                                sender.sendMessage("§cAn error has occurred, please contact the server administrators.");
+                                return;
+                            }
                             match.setNeedPlayers(needPlayers);
                             sender.sendMessage("Made a new "+matchFactory.getName()+" match with index "+ matchManager.matches.indexOf(match));
                         })
