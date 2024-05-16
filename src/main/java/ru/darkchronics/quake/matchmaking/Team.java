@@ -17,7 +17,7 @@ public enum Team {
             COLORS.put(RED, 0xff3f3f);
             COLORS.put(BLUE, 0x3f3fff);
             COLORS.put(FREE, 0xffff00);
-            COLORS.put(SPECTATOR, 0xffff00);
+            COLORS.put(SPECTATOR, 0x00ff00);
         }
 
         public static int get(Team team) {
