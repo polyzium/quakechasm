@@ -1,6 +1,6 @@
 package ru.darkchronics.quake.matchmaking.matches;
 
-import org.bukkit.Bukkit;
+import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.matchmaking.factory.MatchFactory;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 
@@ -11,7 +11,7 @@ public class MatchManager {
     public ArrayList<Match> matches;
 
     public MatchManager() {
-        this.matches = new ArrayList<>(2);
+        this.matches = new ArrayList<>(10);
 
         // singleton
         INSTANCE = this;

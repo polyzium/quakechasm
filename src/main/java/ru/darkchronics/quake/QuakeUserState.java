@@ -13,6 +13,7 @@ import ru.darkchronics.quake.game.combat.*;
 import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.hud.Hud;
+import ru.darkchronics.quake.matchmaking.MatchmakingState;
 import ru.darkchronics.quake.matchmaking.matches.Match;
 import ru.darkchronics.quake.misc.MiscUtil;
 
@@ -22,6 +23,7 @@ import java.util.Arrays;
 public class QuakeUserState {
     private Player player;
     public WeaponUserState weaponState;
+    public MatchmakingState mmState;
     public Location portalLoc = null;
     public BukkitRunnable healthDecreaser;
     public BukkitRunnable armorDecreaser;
@@ -34,6 +36,7 @@ public class QuakeUserState {
     public QuakeUserState(Player player) {
         this.player = player;
         this.weaponState = new WeaponUserState();
+        this.mmState = new MatchmakingState();
         this.hud = new Hud(this);
     }
 

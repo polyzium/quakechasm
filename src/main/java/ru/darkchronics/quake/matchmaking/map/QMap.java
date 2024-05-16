@@ -10,6 +10,7 @@ import ru.darkchronics.quake.game.entities.Trigger;
 import ru.darkchronics.quake.game.entities.pickups.CTFFlag;
 import ru.darkchronics.quake.game.entities.pickups.PowerupSpawner;
 import ru.darkchronics.quake.game.entities.pickups.Spawner;
+import ru.darkchronics.quake.matchmaking.matches.MatchMode;
 import ru.darkchronics.quake.matchmaking.matches.CTFMatch;
 import ru.darkchronics.quake.matchmaking.matches.Match;
 import ru.darkchronics.quake.matchmaking.matches.MatchManager;
@@ -27,14 +28,16 @@ public class QMap {
     public World world;
     public BoundingBox bounds;
     public ArrayList<Spawnpoint> spawnPoints;
+    public ArrayList<MatchMode> recommendedModes;
 
     public QMap() {}
 
-    public QMap(String name, World world, BoundingBox bounds, ArrayList<Spawnpoint> spawnPoints) {
+    public QMap(String name, World world, BoundingBox bounds, ArrayList<Spawnpoint> spawnPoints, ArrayList<MatchMode> recommendedModes) {
         this.name = name;
         this.world = world;
         this.bounds = bounds;
         this.spawnPoints = spawnPoints;
+        this.recommendedModes = recommendedModes;
     }
 
     // Call this ONLY WHEN STARTING A MATCH!!!

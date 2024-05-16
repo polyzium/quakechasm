@@ -22,6 +22,7 @@ import ru.darkchronics.quake.events.listeners.MiscListener;
 import ru.darkchronics.quake.game.entities.pickups.*;
 import ru.darkchronics.quake.game.entities.triggers.Jumppad;
 import ru.darkchronics.quake.game.entities.triggers.Portal;
+import ru.darkchronics.quake.matchmaking.MatchmakingManager;
 import ru.darkchronics.quake.matchmaking.matches.MatchManager;
 import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.map.QMap;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class QuakePlugin extends JavaPlugin {
     public static QuakePlugin INSTANCE;
@@ -44,6 +46,7 @@ public class QuakePlugin extends JavaPlugin {
     private float rotatorAngle;
     public ArrayList<QMap> maps;
     public MatchManager matchManager;
+    public MatchmakingManager matchmakingManager;
 
     public void startRotatingPickups() {
         this.rotatorAngle = 0;
@@ -306,9 +309,6 @@ public class QuakePlugin extends JavaPlugin {
         // singleton pattern
         INSTANCE = this;
 
-        // commands
-        Commands.initQuakeCommand();
-
         // events
         getServer().getPluginManager().registerEvents(new MiscListener(), this);
         getServer().getPluginManager().registerEvents(new ChatListener(), this);
@@ -318,6 +318,8 @@ public class QuakePlugin extends JavaPlugin {
         // other stuff
         getLogger().info("Initializing match manager");
         this.matchManager = new MatchManager();
+        getLogger().info("Initializing matchmaking manager");
+        this.matchmakingManager = new MatchmakingManager();
         getLogger().info("Instantiating states for current players");
         this.instantiateStates();
         getLogger().info("Loading maps");
@@ -326,6 +328,9 @@ public class QuakePlugin extends JavaPlugin {
         this.loadTriggers();
         this.startRotatingPickups();
         this.startHudUpdater();
+
+        // commands
+        Commands.initQuakeCommand();
     }
 
     @Override

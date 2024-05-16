@@ -27,6 +27,8 @@ import ru.darkchronics.quake.game.entities.Trigger;
 import ru.darkchronics.quake.game.entities.pickups.*;
 import ru.darkchronics.quake.game.entities.triggers.Jumppad;
 import ru.darkchronics.quake.game.entities.triggers.Portal;
+import ru.darkchronics.quake.matchmaking.matches.MatchMode;
+import ru.darkchronics.quake.matchmaking.MatchmakingManager;
 import ru.darkchronics.quake.matchmaking.matches.Match;
 import ru.darkchronics.quake.matchmaking.matches.MatchManager;
 import ru.darkchronics.quake.matchmaking.Team;
@@ -39,6 +41,8 @@ import ru.darkchronics.quake.misc.TableBuilder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class Commands {
    
@@ -415,9 +419,13 @@ public abstract class Commands {
                     }
                 });
 
+        ListArgument<MatchMode> recommendedModesArg = new ListArgumentBuilder<MatchMode>("recommendedModes")
+                .withList(List.of(MatchMode.values()))
+                .withMapper(mode -> mode.name().toLowerCase())
+                .buildGreedy();
         CommandAPICommand mapCmd = new CommandAPICommand("map")
                 .withSubcommand(new CommandAPICommand("create")
-                        .withArguments(new StringArgument("name"))
+                        .withArguments(new StringArgument("name"), recommendedModesArg)
                         .executesPlayer((player, args) -> {
                             World world = player.getWorld();
                             BoundingBox bukkitSelection;
@@ -440,9 +448,11 @@ public abstract class Commands {
                             }
 
                             ArrayList<Spawnpoint> spawnPoints = QuakePlugin.scanSpawnpointsIn(player.getWorld(), bukkitSelection);
+                            List<MatchMode> recommendedModes = (List<MatchMode>) args.get("recommendedModes");
 
                             String name = (String) args.get("name");
-                            QMap qMap = new QMap(name, world, bukkitSelection, new ArrayList<>(spawnPoints));
+                            assert recommendedModes != null;
+                            QMap qMap = new QMap(name, world, bukkitSelection, new ArrayList<>(spawnPoints), new ArrayList<>(recommendedModes));
                             if (QuakePlugin.INSTANCE.maps == null)
                                 QuakePlugin.INSTANCE.maps = new ArrayList<>(8);
 
@@ -638,6 +648,75 @@ public abstract class Commands {
                         })
                 );
 
+        StringArgument matchmakingModeArg = (StringArgument) new StringArgument("mode")
+                .includeSuggestions(ArgumentSuggestions.strings("ffa", "tdm", "ctf"));
+        ListArgument<QMap> matchmakingMapsArg = new ListArgumentBuilder<QMap>("maps")
+                .withList(new ArrayList<>(QuakePlugin.INSTANCE.maps))
+                .withMapper(qMap -> qMap.name)
+                .buildGreedy();
+        CommandAPICommand matchmakingCmd = new CommandAPICommand("matchmaking")
+                .withSubcommand(new CommandAPICommand("search")
+                        .withArguments(matchmakingModeArg, matchmakingMapsArg)
+                        .executesPlayer((player, args) -> {
+                            if (MatchmakingManager.INSTANCE.findPendingPlayer(player) != null) {
+                                player.sendMessage("§cYou are already searching for a match!");
+                                return;
+                            }
+
+                            if (QuakePlugin.INSTANCE.userStates.get(player).currentMatch != null) {
+                                player.sendMessage("§cPlease leave the match before starting a search");
+                                return;
+                            }
+
+                            String modeString = (String) args.get("mode");
+                            assert modeString != null;
+                            MatchMode mode = switch (modeString) {
+                                case "ffa" -> MatchMode.FFA;
+                                case "tdm" -> MatchMode.TDM;
+                                case "ctf" -> MatchMode.CTF;
+                                default -> null;
+                            };
+                            if (mode == null) {
+                                player.sendMessage("Invalid match mode "+modeString);
+                                return;
+                            }
+
+                            List<QMap> maps = (List<QMap>) args.get("maps");
+                            assert maps != null;
+                            List<String> stringedMaps = maps.stream().map(qMap -> qMap.name).collect(Collectors.toList());
+                            MatchmakingManager.INSTANCE.startSearching(stringedMaps, mode, player);
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("cancel")
+                        .executesPlayer((player, args) -> {
+                            QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+                            if (userState.mmState.currentPendingMatch != null) {
+                                player.sendMessage("§cPlease accept the match first");
+                                return;
+                            } else if (userState.mmState.acceptedPendingMatch != null) {
+                                player.sendMessage("§cYou can't cancel after accepting the match!");
+                                return;
+                            }
+
+                            boolean wasSearching = MatchmakingManager.INSTANCE.stopSearching(player);
+                            if (wasSearching)
+                                player.sendMessage("Search cancelled");
+                            else
+                                player.sendMessage("§cAlready cancelled");
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("accept")
+                        .executesPlayer((player, args) -> {
+                            QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+                            if (userState.mmState.currentPendingMatch != null) {
+                                userState.mmState.currentPendingMatch.accept(player);
+                            } else {
+                                player.sendMessage("§cYou have no pending match to accept!");
+                                return;
+                            }
+                        })
+                );
+
         CommandAPICommand test = new CommandAPICommand("test")
                 .executesPlayer((player, args) -> {
                     TableBuilder table = new TableBuilder();
@@ -663,6 +742,7 @@ public abstract class Commands {
                         giveCmd,
                         mapCmd,
                         matchCmd,
+                        matchmakingCmd,
                         test
                 )
                 .register();

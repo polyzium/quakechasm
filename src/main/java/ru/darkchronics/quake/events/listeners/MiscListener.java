@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3d;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
+import ru.darkchronics.quake.matchmaking.MatchmakingManager;
 
 import java.util.HashMap;
 import java.util.List;
@@ -42,9 +43,9 @@ public class MiscListener implements Listener {
     public void onPlayerLeave(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
-        if (userState.currentMatch != null) {
-            userState.currentMatch.leave(player);
-        }
+        if (userState.currentMatch != null) userState.currentMatch.leave(player);
+        if (userState.mmState.currentPendingMatch != null) userState.mmState.currentPendingMatch.cancel();
+        MatchmakingManager.INSTANCE.stopSearching(player);
 
         QuakePlugin.INSTANCE.userStates.remove(player);
     }
