@@ -32,6 +32,7 @@ public class QuakeUserState {
     public Hud hud;
     public Match currentMatch;
     public DamageData lastDamage;
+    public int dashCooldown;
 
     public QuakeUserState(Player player) {
         this.player = player;

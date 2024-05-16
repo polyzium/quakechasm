@@ -5,6 +5,7 @@ import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
@@ -22,6 +23,7 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
@@ -29,6 +31,7 @@ import ru.darkchronics.quake.game.combat.*;
 import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.hud.Hud;
+import ru.darkchronics.quake.matchmaking.matches.CTFMatch;
 import ru.darkchronics.quake.misc.MiscUtil;
 
 import java.util.*;
@@ -333,6 +336,17 @@ public class CombatListener implements Listener {
         event.setCancelled(true);
 
         Player player = event.getPlayer();
+        QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+        if (!(userState.currentMatch == null || userState.currentMatch instanceof CTFMatch)) return;
+        if (userState.dashCooldown > 0) {
+            Hud.pickupMessage(
+                    player,
+                    Component.text("Dash cooldown "+((float) userState.dashCooldown/10)+"s")
+                            .color(TextColor.color(0xff0000))
+            );
+            return;
+        }
+
         // TODO replace with Y coord check
         if (!player.isOnGround()) return;
         Vector dashVector = player.getLocation().getDirection().clone();
@@ -342,6 +356,18 @@ public class CombatListener implements Listener {
         dashVector.setY(0.25);
 
         player.setVelocity(dashVector);
+
+        userState.dashCooldown = 30;
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                userState.dashCooldown--;
+
+                if (userState.dashCooldown <= 0) {
+                    cancel();
+                }
+            }
+        }.runTaskTimer(QuakePlugin.INSTANCE, 0, 2);
     }
 
     // Also no offhand, but in inventory
