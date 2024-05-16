@@ -20,7 +20,7 @@ public class MatchManager {
     public Match newMatch(MatchFactory matchFactory, QMap map) {
         Match match = matchFactory.createMatch(map);
         if (match == null) {
-            Bukkit.getLogger().severe("Failed to make a "+matchFactory.getName()+" match");
+            QuakePlugin.INSTANCE.getLogger().severe("Failed to make a "+matchFactory.getName()+" match");
             return null;
         }
 
