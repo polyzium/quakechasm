@@ -721,6 +721,18 @@ public abstract class Commands {
                         })
                 );
 
+        CommandAPICommand entityCmd = new CommandAPICommand("entity")
+                .withSubcommands(
+                        weaponSpawnerCmd,
+                        healthSpawnerCmd,
+                        ammoSpawnerCmd,
+                        armorSpawnerCmd,
+                        powerupSpawnerCmd,
+                        ctfFlagCmd,
+                        jumppadCmd,
+                        portalCmd
+                );
+
         CommandAPICommand test = new CommandAPICommand("test")
                 .executesPlayer((player, args) -> {
                     TableBuilder table = new TableBuilder();
@@ -734,14 +746,7 @@ public abstract class Commands {
         new CommandAPICommand("quake")
                 .withAliases("dcquake")
                 .withSubcommands(
-                        weaponSpawnerCmd,
-                        healthSpawnerCmd,
-                        ammoSpawnerCmd,
-                        armorSpawnerCmd,
-                        powerupSpawnerCmd,
-                        ctfFlagCmd,
-                        jumppadCmd,
-                        portalCmd,
+                        entityCmd,
                         reloadCmd,
                         giveCmd,
                         mapCmd,
