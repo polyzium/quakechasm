@@ -124,7 +124,7 @@ public abstract class Commands {
                             )
                                             .appendNewline()
                                     .append(MiniMessage.miniMessage().deserialize(
-                                            String.format("<click:run_command:/quake jumppad fromTry %d %d %d %f %f %f><hover:show_text:'Click here to create a jumppad based on the results.'><green>[Create]</green>",
+                                            String.format("<click:run_command:/quake entity jumppad fromTry %d %d %d %f %f %f><hover:show_text:'Click here to create a jumppad based on the results.'><green>[Create]</green>",
                                                     jpLoc.getBlockX(), jpLoc.getBlockY(), jpLoc.getBlockZ(),
                                                     launchVector.getX(), launchVector.getY(), launchVector.getZ()
                                             )
