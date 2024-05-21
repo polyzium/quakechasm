@@ -64,8 +64,8 @@ public class CTFMatch extends Match {
     }
 
     @Override
-    public void join(Player player) {
-        super.join(player);
+    public void join(Player player, Team team) {
+        super.join(player, team);
         scores.put(player, 0);
         player.showBossBar(this.infoBar);
 
@@ -89,6 +89,7 @@ public class CTFMatch extends Match {
         super.leave(player);
         scores.remove(player);
         player.hideBossBar(this.infoBar);
+        this.updateScoreboard();
 
         if (players.isEmpty()) {
             QuakePlugin.INSTANCE.getLogger().warning("Last player of match "+this.getName()+", "+map.name+" has left. Ending match.");

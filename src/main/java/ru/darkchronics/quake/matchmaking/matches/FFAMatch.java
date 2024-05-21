@@ -47,8 +47,8 @@ public class FFAMatch extends Match {
     }
 
     @Override
-    public void join(Player player) {
-        super.join(player);
+    public void join(Player player, Team team) {
+        super.join(player, team);
         scores.put(player, 0);
 
         this.updateScoreboard();
@@ -63,6 +63,8 @@ public class FFAMatch extends Match {
     public void leave(Player player) {
         super.leave(player);
         scores.remove(player);
+        this.updateScoreboard();
+
         if (players.isEmpty()) {
             QuakePlugin.INSTANCE.getLogger().warning("Last player of match "+this.getName()+", "+map.name+" has left. Ending match.");
             this.end();

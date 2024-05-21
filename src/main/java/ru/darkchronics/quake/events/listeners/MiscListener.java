@@ -45,7 +45,8 @@ public class MiscListener implements Listener {
         QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
         if (userState.currentMatch != null) userState.currentMatch.leave(player);
         if (userState.mmState.currentPendingMatch != null) userState.mmState.currentPendingMatch.cancel();
-        MatchmakingManager.INSTANCE.stopSearching(player);
+        if (MatchmakingManager.INSTANCE.findPendingParty(player) != null) MatchmakingManager.INSTANCE.stopSearching(player);
+        userState.mmState.currentParty.removePlayer(player);
 
         QuakePlugin.INSTANCE.userStates.remove(player);
     }

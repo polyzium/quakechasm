@@ -8,6 +8,8 @@ import com.sk89q.worldedit.regions.Region;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.*;
 import net.kyori.adventure.key.Key;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
 import joptsimple.internal.Strings;
 import net.kyori.adventure.text.Component;
@@ -425,7 +427,7 @@ public abstract class Commands {
                 .buildGreedy();
         CommandAPICommand mapCmd = new CommandAPICommand("map")
                 .withSubcommand(new CommandAPICommand("create")
-                        .withArguments(new StringArgument("name"), recommendedModesArg)
+                        .withArguments(new StringArgument("name"), new IntegerArgument("neededPlayers"), recommendedModesArg)
                         .executesPlayer((player, args) -> {
                             World world = player.getWorld();
                             BoundingBox bukkitSelection;
@@ -451,8 +453,10 @@ public abstract class Commands {
                             List<MatchMode> recommendedModes = (List<MatchMode>) args.get("recommendedModes");
 
                             String name = (String) args.get("name");
+                            Integer neededPlayers = (Integer) args.get("neededPlayers");
                             assert recommendedModes != null;
-                            QMap qMap = new QMap(name, world, bukkitSelection, new ArrayList<>(spawnPoints), new ArrayList<>(recommendedModes));
+                            assert neededPlayers != null;
+                            QMap qMap = new QMap(name, world, bukkitSelection, new ArrayList<>(spawnPoints), new ArrayList<>(recommendedModes), neededPlayers);
                             if (QuakePlugin.INSTANCE.maps == null)
                                 QuakePlugin.INSTANCE.maps = new ArrayList<>(8);
 
@@ -622,7 +626,7 @@ public abstract class Commands {
                                 return;
                             }
 
-                            matchManager.matches.get(index).join(player);
+                            matchManager.matches.get(index).join(player, null);
                         })
                 )
                 .withSubcommand(new CommandAPICommand("leave")
@@ -662,12 +666,18 @@ public abstract class Commands {
                 .withSubcommand(new CommandAPICommand("search")
                         .withArguments(matchmakingModeArg, matchmakingMapsArg)
                         .executesPlayer((player, args) -> {
-                            if (MatchmakingManager.INSTANCE.findPendingPlayer(player) != null) {
+                            QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+                            if (userState.mmState.currentParty.leader != player) {
+                                player.sendMessage("§cOnly party leader has access to this command");
+                                return;
+                            }
+
+                            if (MatchmakingManager.INSTANCE.findPendingParty(player) != null) {
                                 player.sendMessage("§cYou are already searching for a match!");
                                 return;
                             }
 
-                            if (QuakePlugin.INSTANCE.userStates.get(player).currentMatch != null) {
+                            if (userState.currentMatch != null) {
                                 player.sendMessage("§cPlease leave the match before starting a search");
                                 return;
                             }
@@ -687,13 +697,22 @@ public abstract class Commands {
 
                             List<QMap> maps = (List<QMap>) args.get("maps");
                             assert maps != null;
+                            if (maps.size() > 1) {
+                                player.sendMessage("§cQueuing for more than one map is currently unsupported");
+                                return;
+                            }
                             List<String> stringedMaps = maps.stream().map(qMap -> qMap.name).collect(Collectors.toList());
-                            MatchmakingManager.INSTANCE.startSearching(stringedMaps, mode, player);
+                            MatchmakingManager.INSTANCE.startSearching(stringedMaps, mode, userState.mmState.currentParty);
                         })
                 )
                 .withSubcommand(new CommandAPICommand("cancel")
                         .executesPlayer((player, args) -> {
                             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+                            if (userState.mmState.currentParty.leader != player) {
+                                player.sendMessage("§cOnly party leader has access to this command");
+                                return;
+                            }
+
                             if (userState.mmState.currentPendingMatch != null) {
                                 player.sendMessage("§cPlease accept the match first");
                                 return;
@@ -718,6 +737,118 @@ public abstract class Commands {
                                 player.sendMessage("§cYou have no pending match to accept!");
                                 return;
                             }
+                        })
+                );
+
+        CommandAPICommand partyCmd = new CommandAPICommand("party")
+                .withSubcommand(new CommandAPICommand("invite")
+                        .withArguments(new PlayerArgument("player"))
+                        .executesPlayer((player, args) -> {
+                            Player invitee = (Player) args.get("player");
+                            assert invitee != null;
+
+                            if (player == invitee) {
+                                player.sendMessage("§cYou can't invite yourself!");
+                                return;
+                            }
+
+                            QuakeUserState inviteeState = QuakePlugin.INSTANCE.userStates.get(invitee);
+                            QuakeUserState inviterState = QuakePlugin.INSTANCE.userStates.get(player);
+                            if (inviterState.mmState.currentParty.getPlayers().contains(invitee)) {
+                                player.sendMessage("§cThis player is already in your party");
+                                return;
+                            }
+                            inviteeState.mmState.invitationParty = inviterState.mmState.currentParty;
+
+                            invitee.sendMessage(player.getName()+" has invited you to their party. Type \"/quake party accept\" to accept the invite.\n" +
+                                    "This invite is valid for 30 seconds, if you wish to deny, do not accept.");
+                            inviterState.mmState.currentParty.sendMessage(Component.textOfChildren(
+                                    MatchmakingManager.Party.PREFIX, Component.text(player.getName()+" invited "+invitee.getName())
+                            ));
+
+                            new BukkitRunnable() {
+                                @Override
+                                public void run() {
+                                    if (inviteeState.mmState.invitationParty == null) return;
+
+                                    invitee.sendMessage("§cYour party invite has expired");
+                                    player.sendMessage("§c"+invitee.getName()+" did not accept your party invite");
+
+                                    inviteeState.mmState.invitationParty = null;
+                                }
+                            }.runTaskLater(QuakePlugin.INSTANCE, 30*20);
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("accept")
+                        .executesPlayer((player, args) -> {
+                            QuakeUserState inviteeState = QuakePlugin.INSTANCE.userStates.get(player);
+
+                            if (inviteeState.mmState.invitationParty == null) {
+                                player.sendMessage("§cYou have no pending party invite to accept!");
+                                return;
+                            }
+
+                            inviteeState.mmState.currentParty.removePlayer(player);
+                            inviteeState.mmState.invitationParty.addPlayer(player);
+                            inviteeState.mmState.currentParty = inviteeState.mmState.invitationParty;
+                            inviteeState.mmState.invitationParty = null;
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("list")
+                        .executesPlayer((player, args) -> {
+                            player.sendMessage("All players in your party:");
+                            QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+                            for (Player partyPlayer : userState.mmState.currentParty.getPlayers()) {
+                                boolean isLeader = partyPlayer == userState.mmState.currentParty.leader;
+                                player.sendMessage(Component.textOfChildren(
+                                        partyPlayer.displayName(),
+                                        isLeader?Component.text(" (leader)"):Component.empty()
+                                ));
+                            }
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("kick")
+                        .withArguments(new PlayerArgument("player"))
+                        .executesPlayer((player, args) -> {
+                            QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+                            if (userState.mmState.currentParty.leader != player) {
+                                player.sendMessage("§cOnly party leader has access to this command");
+                                return;
+                            }
+
+                            Player annoyingPlayer = (Player) args.get("player");
+                            assert annoyingPlayer != null;
+
+                            if (player == annoyingPlayer) {
+                                player.sendMessage("§cYou can't kick yourself!");
+                                return;
+                            }
+
+                            if (!userState.mmState.currentParty.getPlayers().contains(annoyingPlayer)) {
+                                player.sendMessage("§c"+annoyingPlayer.getName()+" is not in your party");
+                                return;
+                            }
+                            userState.mmState.currentParty.removePlayer(annoyingPlayer);
+
+                            userState.mmState.currentParty.sendMessage(Component.textOfChildren(
+                                    MatchmakingManager.Party.PREFIX, player.displayName(), Component.text(" kicked "), annoyingPlayer.displayName()
+                            ));
+                            annoyingPlayer.sendMessage("§cYou've been kicked from "+player.getName()+"'s party");
+                        })
+                )
+                .withSubcommand(new CommandAPICommand("leave")
+                        .executesPlayer((player, args) -> {
+                            QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+                            MatchmakingManager.Party partyToLeave = userState.mmState.currentParty;
+                            if (userState.mmState.currentParty.size() == 1) {
+                                player.sendMessage("§cYou are the only one in this party");
+                                return;
+                            }
+
+                            if (userState.mmState.currentParty.leader == player)
+                                player.sendMessage("§eYou are leaving your own party. The party will have someone else selected as the leader.");
+                            userState.mmState.currentParty.removePlayer(player);
+                            player.sendMessage("§aYou left "+partyToLeave.leader.getName()+"'s party");
                         })
                 );
 
@@ -752,6 +883,7 @@ public abstract class Commands {
                         mapCmd,
                         matchCmd,
                         matchmakingCmd,
+                        partyCmd,
                         test
                 )
                 .register();

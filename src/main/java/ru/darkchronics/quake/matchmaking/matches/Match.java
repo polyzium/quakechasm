@@ -56,14 +56,23 @@ public abstract class Match implements ForwardingAudience {
     public abstract void setScoreLimit(int scoreLimit);
     public abstract void setNeedPlayers(int needPlayers);
 
-    public void join(Player player) {
-        Team team = this.assignTeam(player);
+    public void join(Player player, Team team) {
+        Team resolvedTeam;
+        if (team == null)
+            resolvedTeam = this.assignTeam(player);
+        else
+            resolvedTeam = team;
 
-        players.put(player, team);
+        if (!this.allowedTeams().contains(resolvedTeam)) {
+            QuakePlugin.INSTANCE.getLogger().warning("Player attempted to join disallowed team, ignoring");
+            return;
+        }
+
+        players.put(player, resolvedTeam);
         QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
         userState.currentMatch = this;
 
-        Location spawn = map.getRandomSpawnpoint(team);
+        Location spawn = map.getRandomSpawnpoint(resolvedTeam);
         player.teleport(spawn);
         MiscUtil.teleEffect(spawn, false);
         userState.initForMatch();

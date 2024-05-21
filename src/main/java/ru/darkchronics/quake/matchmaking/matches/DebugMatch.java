@@ -16,8 +16,8 @@ public class DebugMatch extends Match {
     }
 
     @Override
-    public void join(Player player) {
-        super.join(player);
+    public void join(Player player, Team team) {
+        super.join(player, team);
 
         player.sendMessage(Component.text("This match is for testing purposes only!").color(TextColor.color(0xff0000)));
     }

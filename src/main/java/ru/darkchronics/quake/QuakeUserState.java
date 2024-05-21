@@ -13,6 +13,7 @@ import ru.darkchronics.quake.game.combat.*;
 import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.hud.Hud;
+import ru.darkchronics.quake.matchmaking.MatchmakingManager;
 import ru.darkchronics.quake.matchmaking.MatchmakingState;
 import ru.darkchronics.quake.matchmaking.matches.Match;
 import ru.darkchronics.quake.misc.MiscUtil;
@@ -38,6 +39,7 @@ public class QuakeUserState {
         this.player = player;
         this.weaponState = new WeaponUserState();
         this.mmState = new MatchmakingState();
+        this.mmState.currentParty = new MatchmakingManager.Party(player);
         this.hud = new Hud(this);
     }
 

@@ -1,5 +1,7 @@
 package ru.darkchronics.quake.matchmaking.map;
 
+import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -29,15 +31,17 @@ public class QMap {
     public BoundingBox bounds;
     public ArrayList<Spawnpoint> spawnPoints;
     public ArrayList<MatchMode> recommendedModes;
+    public int neededPlayers;
 
     public QMap() {}
 
-    public QMap(String name, World world, BoundingBox bounds, ArrayList<Spawnpoint> spawnPoints, ArrayList<MatchMode> recommendedModes) {
+    public QMap(String name, World world, BoundingBox bounds, ArrayList<Spawnpoint> spawnPoints, ArrayList<MatchMode> recommendedModes, int neededPlayers) {
         this.name = name;
         this.world = world;
         this.bounds = bounds;
         this.spawnPoints = spawnPoints;
         this.recommendedModes = recommendedModes;
+        this.neededPlayers = neededPlayers;
     }
 
     // Call this ONLY WHEN STARTING A MATCH!!!
