@@ -37,6 +37,7 @@ import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.factory.*;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 import ru.darkchronics.quake.matchmaking.map.Spawnpoint;
+import ru.darkchronics.quake.misc.Chatroom;
 import ru.darkchronics.quake.misc.MiscUtil;
 import ru.darkchronics.quake.misc.ParticleUtil;
 import ru.darkchronics.quake.misc.TableBuilder;
@@ -864,6 +865,22 @@ public abstract class Commands {
                         portalCmd
                 );
 
+        CommandAPICommand chatCmd = new CommandAPICommand("chat")
+                .withArguments(new MultiLiteralArgument("chatroom", MiscUtil.getEnumNamesLowercase(Chatroom.class)))
+                .executesPlayer((player, args) -> {
+                    Chatroom chatroom;
+                    try {
+                        chatroom = Chatroom.valueOf(((String) args.get("chatroom")).toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                        player.sendMessage("§cThis is a bug! This chatroom is invalid!");
+                        player.sendMessage("§c"+e.getMessage());
+                        return;
+                    }
+
+                    QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+                    userState.switchChat(chatroom);
+                });
+
         CommandAPICommand test = new CommandAPICommand("test")
                 .executesPlayer((player, args) -> {
                     TableBuilder table = new TableBuilder();
@@ -884,6 +901,7 @@ public abstract class Commands {
                         matchCmd,
                         matchmakingCmd,
                         partyCmd,
+                        chatCmd,
                         test
                 )
                 .register();

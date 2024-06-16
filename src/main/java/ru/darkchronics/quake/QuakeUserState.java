@@ -15,7 +15,9 @@ import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.hud.Hud;
 import ru.darkchronics.quake.matchmaking.MatchmakingManager;
 import ru.darkchronics.quake.matchmaking.MatchmakingState;
+import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.matches.Match;
+import ru.darkchronics.quake.misc.Chatroom;
 import ru.darkchronics.quake.misc.MiscUtil;
 
 import java.util.ArrayList;
@@ -34,6 +36,7 @@ public class QuakeUserState {
     public Match currentMatch;
     public DamageData lastDamage;
     public int dashCooldown;
+    public Chatroom currentChat = Chatroom.GLOBAL;
 
     public QuakeUserState(Player player) {
         this.player = player;
@@ -98,6 +101,30 @@ public class QuakeUserState {
         Location spawnpoint = this.prepareRespawn();
         player.teleport(spawnpoint);
         MiscUtil.teleEffect(spawnpoint, false);
+    }
+
+    public void switchChat(Chatroom chatroom) {
+        if (
+                this.currentMatch == null &&
+                (chatroom == Chatroom.MATCH || chatroom == Chatroom.TEAM)
+        ) {
+            player.sendMessage("§cUnable to switch to "+chatroom.name()+" chat, you are not in a match");
+            return;
+        }
+
+        if (
+                this.currentMatch != null &&
+                        this.currentMatch.allowedTeams().stream().allMatch(team -> team == Team.FREE) &&
+                        chatroom == Chatroom.TEAM
+        ) {
+            player.sendMessage("§cThis is not a team match");
+            return;
+        }
+
+        this.currentChat = chatroom;
+        player.sendMessage(Component.textOfChildren(
+            Component.text("You have switched to "), this.currentChat.getPrefix().decoration(TextDecoration.BOLD, false), Component.text(" chat")
+        ));
     }
 
     public void startArmorDecreaser() {

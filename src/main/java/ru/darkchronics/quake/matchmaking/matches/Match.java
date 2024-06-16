@@ -16,6 +16,7 @@ import ru.darkchronics.quake.game.combat.DamageCause;
 import ru.darkchronics.quake.game.combat.DeathMessages;
 import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.map.QMap;
+import ru.darkchronics.quake.misc.Chatroom;
 import ru.darkchronics.quake.misc.MiscUtil;
 import ru.darkchronics.quake.misc.Pair;
 
@@ -81,6 +82,7 @@ public abstract class Match implements ForwardingAudience {
             player.unlistPlayer(onlinePlayer);
         }
 
+        userState.switchChat(Chatroom.MATCH);
         this.sendMessage(player.getName()+" entered the game");
     }
 
@@ -100,6 +102,7 @@ public abstract class Match implements ForwardingAudience {
     public void cleanup(Player player) {
         QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
         userState.currentMatch = null;
+        userState.switchChat(Chatroom.GLOBAL);
 
         // TODO teleport to lobby
         MiscUtil.teleEffect(player.getLocation(), true);
