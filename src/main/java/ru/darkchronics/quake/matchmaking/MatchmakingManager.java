@@ -2,6 +2,7 @@ package ru.darkchronics.quake.matchmaking;
 
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.audience.ForwardingAudience;
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
@@ -85,11 +86,25 @@ public class MatchmakingManager {
         ArrayList<String> selectedMaps;
         private boolean isAcceptingMatch;
         BukkitTask countdownTask;
+        BukkitTask timeTask;
+        protected BossBar statusBar;
 
         public PendingParty(List<String> selectedMaps, MatchMode matchMode, Party party) {
             this.selectedMaps = new ArrayList<>(selectedMaps);
             this.matchMode = matchMode;
             this.party = party;
+            this.statusBar = BossBar.bossBar(Component.text("Searching for matches: 00:00"), 0, BossBar.Color.BLUE, BossBar.Overlay.PROGRESS);
+            this.timeTask = new BukkitRunnable() {
+                int s = 0;
+                @Override
+                public void run() {
+                    s++;
+                    statusBar.name(Component.text(
+                            "Searching for matches: "+String.format("%02d:%02d", (s % 3600) / 60, (s % 60))
+                    ));
+                    statusBar.progress((float) (s % 60)/60);
+                }
+            }.runTaskTimer(QuakePlugin.INSTANCE, 20, 20);
         }
     }
 
@@ -252,6 +267,7 @@ public class MatchmakingManager {
         }
 
         PendingParty pendingParty = new PendingParty(selectedMaps, matchMode, party);
+        pendingParty.party.showBossBar(pendingParty.statusBar);
         this.pendingParties.add(pendingParty);
         this.signal(pendingParty);
 
@@ -268,12 +284,14 @@ public class MatchmakingManager {
     public boolean stopSearching(Player player) {
         PendingParty pendingSelf = this.findPendingParty(player);
         if (pendingSelf == null) return false;
-        for (Player partyPlayer : findPendingParty(player).party.players) {
+        for (Player partyPlayer : pendingSelf.party.players) {
             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(partyPlayer);
             userState.mmState.currentPendingMatch = null;
         }
 
         if (pendingSelf.countdownTask != null) pendingSelf.countdownTask.cancel();
+        pendingSelf.timeTask.cancel();
+        pendingSelf.party.hideBossBar(pendingSelf.statusBar);
 
         for (Player partyPlayer : pendingSelf.party.players) {
             if (partyPlayer == pendingSelf.party.leader) continue;
