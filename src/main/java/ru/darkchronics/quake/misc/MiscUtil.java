@@ -2,7 +2,10 @@ package ru.darkchronics.quake.misc;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.kyori.adventure.text.Component;
 import org.bukkit.*;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import ru.darkchronics.quake.misc.adapters.LocationAdapter;
@@ -77,5 +80,11 @@ public abstract class MiscUtil {
         BoundingBox chunkBB = new BoundingBox(chunkMinX, chunk.getWorld().getMinHeight(), chunkMinZ, chunkMaxX, chunk.getWorld().getMaxHeight(), chunkMaxZ);
 
         return boundingBox.overlaps(chunkBB);
+    }
+
+    public static void setNameForItemStack(ItemStack itemStack, Component name) {
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        itemMeta.displayName(name);
+        itemStack.setItemMeta(itemMeta);
     }
 }

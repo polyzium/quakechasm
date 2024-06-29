@@ -14,11 +14,8 @@ import org.bukkit.util.BoundingBox;
 import org.joml.Matrix4d;
 import org.joml.Matrix4f;
 import ru.darkchronics.quake.commands.Commands;
-import ru.darkchronics.quake.events.listeners.ChatListener;
-import ru.darkchronics.quake.events.listeners.TriggerListener;
-import ru.darkchronics.quake.events.listeners.CombatListener;
+import ru.darkchronics.quake.events.listeners.*;
 import ru.darkchronics.quake.game.entities.*;
-import ru.darkchronics.quake.events.listeners.MiscListener;
 import ru.darkchronics.quake.game.entities.pickups.*;
 import ru.darkchronics.quake.game.entities.triggers.Jumppad;
 import ru.darkchronics.quake.game.entities.triggers.Portal;
@@ -27,6 +24,7 @@ import ru.darkchronics.quake.matchmaking.matches.MatchManager;
 import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 import ru.darkchronics.quake.matchmaking.map.Spawnpoint;
+import ru.darkchronics.quake.menus.MenuManager;
 import ru.darkchronics.quake.misc.MiscUtil;
 
 import java.io.File;
@@ -47,6 +45,7 @@ public class QuakePlugin extends JavaPlugin {
     public ArrayList<QMap> maps;
     public MatchManager matchManager;
     public MatchmakingManager matchmakingManager;
+    public MenuManager menuManager;
 
     public void startRotatingPickups() {
         this.rotatorAngle = 0;
@@ -314,12 +313,15 @@ public class QuakePlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ChatListener(), this);
         getServer().getPluginManager().registerEvents(new TriggerListener(), this);
         getServer().getPluginManager().registerEvents(new CombatListener(), this);
+        getServer().getPluginManager().registerEvents(new MenuListener(), this);
 
         // other stuff
         getLogger().info("Initializing match manager");
         this.matchManager = new MatchManager();
         getLogger().info("Initializing matchmaking manager");
         this.matchmakingManager = new MatchmakingManager();
+        getLogger().info("Initializing menu manager");
+        this.menuManager = new MenuManager();
         getLogger().info("Instantiating states for current players");
         this.instantiateStates();
         getLogger().info("Loading maps");

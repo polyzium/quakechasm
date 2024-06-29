@@ -7,8 +7,11 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.*;
+import net.kyori.adventure.inventory.Book;
 import net.kyori.adventure.key.Key;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
 import joptsimple.internal.Strings;
@@ -37,6 +40,9 @@ import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.factory.*;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 import ru.darkchronics.quake.matchmaking.map.Spawnpoint;
+import ru.darkchronics.quake.menus.Menu;
+import ru.darkchronics.quake.menus.MenuGenerators;
+import ru.darkchronics.quake.menus.MenuManager;
 import ru.darkchronics.quake.misc.Chatroom;
 import ru.darkchronics.quake.misc.MiscUtil;
 import ru.darkchronics.quake.misc.ParticleUtil;
@@ -387,6 +393,7 @@ public abstract class Commands {
                         }));
 
         CommandAPICommand reloadCmd = new CommandAPICommand("reload")
+                .withPermission("quake.admin")
                 .executes((sender, args) -> {
                     QuakePlugin.INSTANCE.onDisable();
                     QuakePlugin.INSTANCE.onEnable();
@@ -398,6 +405,7 @@ public abstract class Commands {
                 });
 
         CommandAPICommand giveCmd = new CommandAPICommand("give")
+                .withPermission("quake.admin")
                 .withArguments(new StringArgument("what").includeSuggestions(ArgumentSuggestions.strings("ammo", "quad", "protection", "regeneration")))
                 .executesPlayer((player, args) -> {
                     String giveWhat = (String) args.get("what");
@@ -427,6 +435,7 @@ public abstract class Commands {
                 .withMapper(mode -> mode.name().toLowerCase())
                 .buildGreedy();
         CommandAPICommand mapCmd = new CommandAPICommand("map")
+                .withPermission("quake.builder")
                 .withSubcommand(new CommandAPICommand("create")
                         .withArguments(new StringArgument("name"), new IntegerArgument("neededPlayers"), recommendedModesArg)
                         .executesPlayer((player, args) -> {
@@ -484,6 +493,7 @@ public abstract class Commands {
                         })
                 )
                 .withSubcommand(new CommandAPICommand("remove")
+                        .withPermission("quake.admin")
                         .withArguments(new StringArgument("mapName"))
                         .executesPlayer((player, args) -> {
                             String name = (String) args.get("mapName");
@@ -569,6 +579,7 @@ public abstract class Commands {
                 .includeSuggestions(ArgumentSuggestions.strings("debug", "ffa", "tdm", "ctf"));
         IntegerArgument needPlayersArg = new IntegerArgument("needPlayers");
         CommandAPICommand matchCmd = new CommandAPICommand("match")
+                .withPermission("quake.admin")
                 .withSubcommand(new CommandAPICommand("create")
                         .withArguments(matchModeArg, needPlayersArg, new StringArgument("mapName"))
                         .executes((sender, args) -> {
@@ -854,6 +865,7 @@ public abstract class Commands {
                 );
 
         CommandAPICommand entityCmd = new CommandAPICommand("entity")
+                .withPermission("quake.builder")
                 .withSubcommands(
                         weaponSpawnerCmd,
                         healthSpawnerCmd,
@@ -882,13 +894,28 @@ public abstract class Commands {
                 });
 
         CommandAPICommand test = new CommandAPICommand("test")
+                .withPermission("quake.admin")
                 .executesPlayer((player, args) -> {
-                    TableBuilder table = new TableBuilder();
+//                    TableBuilder table = new TableBuilder();
+//
+//                    table.addRow("Name", "Score");
+//                    table.addRow("Polyzium7", "1");
+//
+//                    player.sendMessage(Component.text(table.build()).font(Key.key("mono")));
+                    for (Entity entity : player.getWorld().getNearbyEntities(player.getLocation(), 300, 300, 300)) {
+                        String entityType = QEntityUtil.getEntityType(entity);
+                        if (entityType == null || !entityType.equals("weapon_spawner")) continue;
+                        player.sendMessage(Component.textOfChildren(
+                                ((ItemDisplay) entity).getItemStack().displayName(),
+                                Component.text(": "+entity.getLocation().toVector())
+                        ));
+//                        player.sendMessage(((ItemDisplay) entity).getItemStack().displayName());
+                    }
+                });
 
-                    table.addRow("Name", "Score");
-                    table.addRow("Polyzium7", "1");
-
-                    player.sendMessage(Component.text(table.build()).font(Key.key("mono")));
+        CommandAPICommand menuCmd = new CommandAPICommand("menu")
+                .executesPlayer((player, args) -> {
+                    MenuManager.INSTANCE.showMenu(MenuGenerators.mainMenu(), player);
                 });
 
         new CommandAPICommand("quake")
@@ -902,6 +929,7 @@ public abstract class Commands {
                         matchmakingCmd,
                         partyCmd,
                         chatCmd,
+                        menuCmd,
                         test
                 )
                 .register();

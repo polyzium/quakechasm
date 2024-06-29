@@ -82,7 +82,17 @@ public class MatchmakingManager {
 
     public static class PendingParty {
         Party party;
+
+        public MatchMode getMatchMode() {
+            return matchMode;
+        }
+
         MatchMode matchMode;
+
+        public ArrayList<String> getSelectedMaps() {
+            return selectedMaps;
+        }
+
         ArrayList<String> selectedMaps;
         private boolean isAcceptingMatch;
         BukkitTask countdownTask;
