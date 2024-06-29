@@ -6,9 +6,14 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.scoreboard.Scoreboard;
 import org.jetbrains.annotations.NotNull;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
@@ -26,9 +31,22 @@ import java.util.List;
 public abstract class Match implements ForwardingAudience {
     protected QMap map;
     protected HashMap<Player, Team> players = new HashMap<>();
+    protected Scoreboard vanillaScoreboard;
+    protected org.bukkit.scoreboard.Team vanillaRedTeam;
+    protected org.bukkit.scoreboard.Team vanillaBlueTeam;
     public Match(QMap map) {
         this.map = map;
         this.map.chunkLoad();
+
+        // This is needed to hide nametags
+        if (this.isTeamMatch()) {
+            this.vanillaScoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+            this.vanillaRedTeam = this.vanillaScoreboard.registerNewTeam("red");
+            this.vanillaBlueTeam = this.vanillaScoreboard.registerNewTeam("blue");
+
+            this.vanillaRedTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, org.bukkit.scoreboard.Team.OptionStatus.FOR_OTHER_TEAMS);
+            this.vanillaBlueTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY, org.bukkit.scoreboard.Team.OptionStatus.FOR_OTHER_TEAMS);
+        }
     }
     public List<Player> getPlayers() {
         return this.players.keySet().stream().toList();
@@ -82,27 +100,62 @@ public abstract class Match implements ForwardingAudience {
             player.unlistPlayer(onlinePlayer);
         }
 
+        // This is needed to hide nametags
+        if (this.isTeamMatch()) {
+            switch (this.players.get(player)) {
+                case RED -> this.vanillaRedTeam.addPlayer(player);
+                case BLUE -> this.vanillaBlueTeam.addPlayer(player);
+                default -> throw new IllegalArgumentException("Attempt to add player of disallowed team to vanilla team");
+            }
+            player.setScoreboard(this.vanillaScoreboard);
+            setArmor(player, resolvedTeam);
+        }
+
         userState.switchChat(Chatroom.MATCH);
-        this.sendMessage(player.getName()+" entered the game");
+        this.sendMessage(player.getName()+" entered the match");
     }
 
     public void leave(Player player) {
         players.remove(player);
         cleanup(player);
 
-        this.sendMessage(player.getName()+" disconnected");
+        this.sendMessage(player.getName()+" left the match");
     }
     public void end() {
         for (Player player : players.keySet()) {
             cleanup(player);
         }
+
+        if (this.isTeamMatch()) {
+            this.vanillaRedTeam.unregister();
+            this.vanillaBlueTeam.unregister();
+        }
+
         QuakePlugin.INSTANCE.matchManager.matches.remove(this);
     }
     public abstract Team assignTeam(Player player);
+    public static void setArmor(Player player, Team team) {
+        ItemStack torso = new ItemStack(Material.LEATHER_CHESTPLATE);
+        ItemStack pants = new ItemStack(Material.LEATHER_LEGGINGS);
+        ItemStack boots = new ItemStack(Material.LEATHER_BOOTS);
+        LeatherArmorMeta torsoMeta = (LeatherArmorMeta) torso.getItemMeta();
+        LeatherArmorMeta pantsMeta = (LeatherArmorMeta) pants.getItemMeta();
+        LeatherArmorMeta bootsMeta = (LeatherArmorMeta) boots.getItemMeta();
+        torsoMeta.setColor(Color.fromRGB(Team.Colors.get(team)));
+        pantsMeta.setColor(Color.fromRGB(Team.Colors.get(team)));
+        bootsMeta.setColor(Color.fromRGB(Team.Colors.get(team)));
+        torso.setItemMeta(torsoMeta);
+        pants.setItemMeta(pantsMeta);
+        boots.setItemMeta(bootsMeta);
+        player.getInventory().setChestplate(torso);
+        player.getInventory().setLeggings(pants);
+        player.getInventory().setBoots(boots);
+    }
     public void cleanup(Player player) {
         QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
         userState.currentMatch = null;
         userState.switchChat(Chatroom.GLOBAL);
+        player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
 
         // TODO teleport to lobby
         MiscUtil.teleEffect(player.getLocation(), true);
@@ -117,6 +170,10 @@ public abstract class Match implements ForwardingAudience {
     }
     public abstract void onDeath(Player victim, Entity attacker, DamageCause cause);
     public abstract List<Team> allowedTeams();
+    public boolean isTeamMatch() {
+        List<Team> allowedTeams = this.allowedTeams();
+        return allowedTeams.contains(Team.RED) && allowedTeams.contains(Team.BLUE);
+    };
     public static Component getDeathMessage(Player victim, Entity attacker, DamageCause cause) {
         // TODO Vault API for prefixes and shit
         TextComponent component;

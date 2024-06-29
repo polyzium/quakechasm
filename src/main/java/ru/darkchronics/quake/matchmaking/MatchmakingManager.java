@@ -187,8 +187,7 @@ public class MatchmakingManager {
                 logger.info("Setting needed players to "+map.neededPlayers);
                 match.setNeedPlayers(map.neededPlayers);
 
-                boolean isTeamMatch = match.allowedTeams().contains(Team.RED) && match.allowedTeams().contains(Team.BLUE);
-                if (isTeamMatch) {
+                if (match.isTeamMatch()) {
                     logger.info("Joining team1");
                     for (Player team1Player : team1) {
                         INSTANCE.stopSearching(team1Player);

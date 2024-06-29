@@ -101,6 +101,9 @@ public class QuakeUserState {
         Location spawnpoint = this.prepareRespawn();
         player.teleport(spawnpoint);
         MiscUtil.teleEffect(spawnpoint, false);
+
+        if (this.currentMatch.isTeamMatch())
+            Match.setArmor(this.player, this.currentMatch.getTeamOfPlayer(this.player));
     }
 
     public void switchChat(Chatroom chatroom) {

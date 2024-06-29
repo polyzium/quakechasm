@@ -7,6 +7,7 @@ import org.bukkit.*;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -29,6 +30,13 @@ public class PowerupSpawner extends Spawner {
     private Match belongingMatch;
     public PowerupSpawner(PowerupType type, World world, Location location, boolean isDrop, int duration) {
         super(new ItemStack(Material.TOTEM_OF_UNDYING), world, location);
+
+        ItemStack powerupItem = this.display.getItemStack();
+        ItemMeta itemMeta = powerupItem.getItemMeta();
+        itemMeta.setCustomModelData(type.ordinal());
+        powerupItem.setItemMeta(itemMeta);
+        this.display.setItemStack(powerupItem);
+
         this.type = type;
         this.isDrop = isDrop;
         this.duration = duration;
@@ -49,6 +57,12 @@ public class PowerupSpawner extends Spawner {
         this.type = PowerupType.valueOf(displayData.get(typeKey, PersistentDataType.STRING));
         this.isDrop = false;
         this.duration = 30;
+
+        ItemStack powerupItem = this.display.getItemStack();
+        ItemMeta itemMeta = powerupItem.getItemMeta();
+        itemMeta.setCustomModelData(type.ordinal());
+        powerupItem.setItemMeta(itemMeta);
+        this.display.setItemStack(powerupItem);
 
         QuakePlugin.INSTANCE.triggers.add(this);
     }

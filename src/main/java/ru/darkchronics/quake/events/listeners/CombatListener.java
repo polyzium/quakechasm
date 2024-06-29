@@ -32,6 +32,7 @@ import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.hud.Hud;
 import ru.darkchronics.quake.matchmaking.matches.CTFMatch;
+import ru.darkchronics.quake.matchmaking.matches.Match;
 import ru.darkchronics.quake.misc.MiscUtil;
 
 import java.util.*;
@@ -240,13 +241,16 @@ public class CombatListener implements Listener {
     // Respawn on spawnpoints
     @EventHandler
     public void onRespawn(PlayerRespawnEvent event) {
-        QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(event.getPlayer());
+        Player player = event.getPlayer();
+        QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
         if (userState.currentMatch == null) return;
 
         Location spawnPoint = userState.prepareRespawn();
         event.setRespawnLocation(spawnPoint);
 
         MiscUtil.teleEffect(spawnPoint, false);
+        if (userState.currentMatch.isTeamMatch())
+            Match.setArmor(player, userState.currentMatch.getTeamOfPlayer(player));
     }
 
     // No inventory drop + drop powerups + call match death event
