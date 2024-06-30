@@ -114,7 +114,7 @@ public class MatchmakingMenu extends Menu {
 
             mapOption.lore(mapLore);
 
-            MiscUtil.setNameForItemStack(mapOption, Component.text(map.name).decoration(TextDecoration.ITALIC, false));
+            MiscUtil.setNameForItemStack(mapOption, Component.text(map.displayName).decoration(TextDecoration.ITALIC, false));
             this.setItem(i, mapOption, Menu.Handler.fromLMB(player -> {
                 boolean isSearching = MatchmakingManager.INSTANCE.findPendingParty(player) != null;
                 if (isSearching) return;

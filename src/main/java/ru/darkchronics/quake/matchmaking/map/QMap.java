@@ -27,6 +27,7 @@ import static ru.darkchronics.quake.misc.MiscUtil.chunkIntersectsBoundingBox;
 
 public class QMap {
     public String name;
+    public String displayName;
     public World world;
     public BoundingBox bounds;
     public ArrayList<Spawnpoint> spawnPoints;
@@ -35,8 +36,9 @@ public class QMap {
 
     public QMap() {}
 
-    public QMap(String name, World world, BoundingBox bounds, ArrayList<Spawnpoint> spawnPoints, ArrayList<MatchMode> recommendedModes, int neededPlayers) {
+    public QMap(String name, String displayName, World world, BoundingBox bounds, ArrayList<Spawnpoint> spawnPoints, ArrayList<MatchMode> recommendedModes, int neededPlayers) {
         this.name = name;
+        this.displayName = displayName;
         this.world = world;
         this.bounds = bounds;
         this.spawnPoints = spawnPoints;

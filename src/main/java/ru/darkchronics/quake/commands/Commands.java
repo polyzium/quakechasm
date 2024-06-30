@@ -437,7 +437,7 @@ public abstract class Commands {
         CommandAPICommand mapCmd = new CommandAPICommand("map")
                 .withPermission("quake.builder")
                 .withSubcommand(new CommandAPICommand("create")
-                        .withArguments(new StringArgument("name"), new IntegerArgument("neededPlayers"), recommendedModesArg)
+                        .withArguments(new StringArgument("name"), new StringArgument("displayName"), new IntegerArgument("neededPlayers"), recommendedModesArg)
                         .executesPlayer((player, args) -> {
                             World world = player.getWorld();
                             BoundingBox bukkitSelection;
@@ -463,10 +463,11 @@ public abstract class Commands {
                             List<MatchMode> recommendedModes = (List<MatchMode>) args.get("recommendedModes");
 
                             String name = (String) args.get("name");
+                            String displayName = (String) args.get("displayName");
                             Integer neededPlayers = (Integer) args.get("neededPlayers");
                             assert recommendedModes != null;
                             assert neededPlayers != null;
-                            QMap qMap = new QMap(name, world, bukkitSelection, new ArrayList<>(spawnPoints), new ArrayList<>(recommendedModes), neededPlayers);
+                            QMap qMap = new QMap(name, displayName, world, bukkitSelection, new ArrayList<>(spawnPoints), new ArrayList<>(recommendedModes), neededPlayers);
                             if (QuakePlugin.INSTANCE.maps == null)
                                 QuakePlugin.INSTANCE.maps = new ArrayList<>(8);
 
@@ -489,7 +490,7 @@ public abstract class Commands {
                                 world.setBlockData(spawnPoint.pos, Material.AIR.createBlockData());
                             }
 
-                            player.sendMessage("Map \""+name+"\" has been created");
+                            player.sendMessage("Map \""+displayName+"\" has been created");
                         })
                 )
                 .withSubcommand(new CommandAPICommand("remove")

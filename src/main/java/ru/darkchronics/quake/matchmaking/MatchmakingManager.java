@@ -270,7 +270,7 @@ public class MatchmakingManager {
         QMap map = QuakePlugin.INSTANCE.getMap(selectedMaps.get(0));
         int playersPerTeam = map.neededPlayers / 2;
         if (playersPerTeam < party.size()) {
-            party.sendMessage("§cYour party has "+party.size()+" players instead of the maximum "+playersPerTeam+" allowed for "+map.name+". " +
+            party.sendMessage("§cYour party has "+party.size()+" players instead of the maximum "+playersPerTeam+" allowed for the map \""+map.displayName+"\". " +
                     "Please remove one or more players from your party.");
             return;
         }
@@ -285,7 +285,7 @@ public class MatchmakingManager {
                 partyPlayer.sendMessage("Searching for matches... \nUse \"/quake matchmaking cancel\" to stop searching");
             else
                 partyPlayer.sendMessage(Component.textOfChildren(Party.PREFIX, party.leader.displayName(),
-                        Component.text(" started search for matches: mode CTF, maps "+String.join(", ", selectedMaps)))
+                        Component.text(" started search for matches: mode "+matchMode.toString()+", maps "+String.join(", ", selectedMaps)))
                 );
         }
     }
@@ -407,7 +407,7 @@ public class MatchmakingManager {
 
     private void onMatchFound(PendingParty pendingParty, PendingMatch pendingMatch) {
         pendingParty.party.sendMessage("Your match has been found:");
-        pendingParty.party.sendMessage("§b"+pendingMatch.map.name+" | "+pendingMatch.matchMode.getDisplayName());
+        pendingParty.party.sendMessage("§b"+pendingMatch.map.displayName+" | "+pendingMatch.matchMode.getDisplayName());
         pendingParty.party.sendMessage("Type \"/quake matchmaking accept\" to accept the match.");
         pendingParty.isAcceptingMatch = true;
         for (Player partyPlayer : pendingParty.party.players) {
