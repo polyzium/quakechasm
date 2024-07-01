@@ -26,6 +26,7 @@ import ru.darkchronics.quake.matchmaking.map.QMap;
 import ru.darkchronics.quake.matchmaking.map.Spawnpoint;
 import ru.darkchronics.quake.menus.MenuManager;
 import ru.darkchronics.quake.misc.MiscUtil;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 import java.io.File;
 import java.io.FileReader;
@@ -46,6 +47,7 @@ public class QuakePlugin extends JavaPlugin {
     public MatchManager matchManager;
     public MatchmakingManager matchmakingManager;
     public MenuManager menuManager;
+    public TranslationManager translationManager;
 
     public void startRotatingPickups() {
         this.rotatorAngle = 0;
@@ -322,6 +324,12 @@ public class QuakePlugin extends JavaPlugin {
         this.matchmakingManager = new MatchmakingManager();
         getLogger().info("Initializing menu manager");
         this.menuManager = new MenuManager();
+        getLogger().info("Initializing translation manager");
+        try {
+            this.translationManager = new TranslationManager();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         getLogger().info("Instantiating states for current players");
         this.instantiateStates();
         getLogger().info("Loading maps");

@@ -903,15 +903,17 @@ public abstract class Commands {
 //                    table.addRow("Polyzium7", "1");
 //
 //                    player.sendMessage(Component.text(table.build()).font(Key.key("mono")));
-                    for (Entity entity : player.getWorld().getNearbyEntities(player.getLocation(), 300, 300, 300)) {
-                        String entityType = QEntityUtil.getEntityType(entity);
-                        if (entityType == null || !entityType.equals("weapon_spawner")) continue;
-                        player.sendMessage(Component.textOfChildren(
-                                ((ItemDisplay) entity).getItemStack().displayName(),
-                                Component.text(": "+entity.getLocation().toVector())
-                        ));
-//                        player.sendMessage(((ItemDisplay) entity).getItemStack().displayName());
-                    }
+//                    for (Entity entity : player.getWorld().getNearbyEntities(player.getLocation(), 300, 300, 300)) {
+//                        String entityType = QEntityUtil.getEntityType(entity);
+//                        if (entityType == null || !entityType.equals("weapon_spawner")) continue;
+//                        player.sendMessage(Component.textOfChildren(
+//                                ((ItemDisplay) entity).getItemStack().displayName(),
+//                                Component.text(": "+entity.getLocation().toVector())
+//                        ));
+////                        player.sendMessage(((ItemDisplay) entity).getItemStack().displayName());
+//                    }
+
+                    player.sendMessage(String.valueOf(QuakePlugin.INSTANCE.userStates.get(player).currentMatch.isTeamMatch()));
                 });
 
         CommandAPICommand menuCmd = new CommandAPICommand("menu")
