@@ -37,6 +37,8 @@ public class MiscListener implements Listener {
         }
 
         QuakePlugin.INSTANCE.initPlayer(joinedPlayer);
+
+        joinedPlayer.teleport(QuakePlugin.LOBBY);
     }
 
     @EventHandler
@@ -49,6 +51,8 @@ public class MiscListener implements Listener {
         userState.mmState.currentParty.removePlayer(player);
 
         QuakePlugin.INSTANCE.userStates.remove(player);
+
+        player.teleport(QuakePlugin.LOBBY);
     }
 
     @EventHandler

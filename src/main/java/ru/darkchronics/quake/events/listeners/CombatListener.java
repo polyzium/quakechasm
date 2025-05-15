@@ -25,6 +25,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
 import ru.darkchronics.quake.game.combat.*;
@@ -34,6 +35,7 @@ import ru.darkchronics.quake.hud.Hud;
 import ru.darkchronics.quake.matchmaking.matches.CTFMatch;
 import ru.darkchronics.quake.matchmaking.matches.Match;
 import ru.darkchronics.quake.misc.MiscUtil;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -243,7 +245,10 @@ public class CombatListener implements Listener {
     public void onRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
-        if (userState.currentMatch == null) return;
+        if (userState.currentMatch == null) {
+            event.setRespawnLocation(QuakePlugin.LOBBY);
+            return;
+        }
 
         Location spawnPoint = userState.prepareRespawn();
         event.setRespawnLocation(spawnPoint);
@@ -336,7 +341,7 @@ public class CombatListener implements Listener {
     // No offhand, dash instead (default key is F)
     @EventHandler
     public void onHandSwap(PlayerSwapHandItemsEvent event) {
-//        event.getPlayer().sendMessage("§cYou can't put items into offhand!");
+//        event.getPlayer().sendMessage(TranslationManager.t("ERROR_OFFHAND", locale));
         event.setCancelled(true);
 
         Player player = event.getPlayer();
@@ -345,7 +350,7 @@ public class CombatListener implements Listener {
         if (userState.dashCooldown > 0) {
             Hud.pickupMessage(
                     player,
-                    Component.text("Dash cooldown "+((float) userState.dashCooldown/10)+"s")
+                    Component.text(TranslationManager.t("GAME_DASH_COOLDOWN", player)+((float) userState.dashCooldown/10)+TranslationManager.t("GAME_DASH_COOLDOWN_SECONDS", player))
                             .color(TextColor.color(0xff0000))
             );
             return;
@@ -379,7 +384,9 @@ public class CombatListener implements Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         if (event.getSlot() != 40)
             return;
-        event.getView().getPlayer().sendMessage("§cYou can't put items into offhand!");
+
+        Player player = (Player) event.getView().getPlayer();
+        event.getView().getPlayer().sendMessage(TranslationManager.t("ERROR_OFFHAND", player));
         // TODO find a more reliable fix
         ItemStack cursorItem = event.getCursor().clone();
         event.setCancelled(true);

@@ -16,6 +16,7 @@ import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.game.combat.WeaponUserState;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
 import ru.darkchronics.quake.hud.Hud;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 public class AmmoSpawner extends Spawner {
     public static final int[] AMOUNTS = {
@@ -28,13 +29,13 @@ public class AmmoSpawner extends Spawner {
             1 // bfg charge
     };
     public static final String[] NAMES = {
-            "Bullets",
-            "Shells",
-            "Rockets",
-            "Battery",
-            "Slugs",
-            "Cells",
-            "BFG Charge"
+            "PICKUP_AMMO_BULLETS",
+            "PICKUP_AMMO_SHELLS",
+            "PICKUP_AMMO_ROCKETS",
+            "PICKUP_AMMO_BATTERY",
+            "PICKUP_AMMO_SLUGS",
+            "PICKUP_AMMO_CELLS",
+            "PICKUP_AMMO_BFG",
     };
     public static final String[] ALIASES = {
             "bullets",
@@ -89,7 +90,7 @@ public class AmmoSpawner extends Spawner {
 
         this.display.setItemStack(new ItemStack(Material.AIR)); // Make invisible
         player.getWorld().playSound(player, "quake.items.ammo.pickup", 0.5f, 1f);
-        Hud.pickupMessage(player, Component.text(NAMES[ammoType]));
+        Hud.pickupMessage(player, Component.text(TranslationManager.t(NAMES[ammoType], player)));
 
         // Respawn in 40 seconds
         this.respawnTask = new BukkitRunnable() {

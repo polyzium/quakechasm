@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import ru.darkchronics.quake.game.combat.DamageCause;
 import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.map.QMap;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 import java.util.List;
 
@@ -19,7 +20,7 @@ public class DebugMatch extends Match {
     public void join(Player player, Team team) {
         super.join(player, team);
 
-        player.sendMessage(Component.text("This match is for testing purposes only!").color(TextColor.color(0xff0000)));
+        player.sendMessage(Component.text(TranslationManager.t("MATCH_DEBUG_DISCLAIMER", player)).color(TextColor.color(0xff0000)));
     }
 
     @Override
@@ -28,7 +29,7 @@ public class DebugMatch extends Match {
     }
 
     public static String getNameStatic() {
-        return "Debug";
+        return "GENERIC_DEBUG";
     }
     public String getName() {
         return getNameStatic();

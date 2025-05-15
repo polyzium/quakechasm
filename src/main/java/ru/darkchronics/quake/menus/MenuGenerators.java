@@ -12,18 +12,20 @@ import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.QuakeUserState;
 import ru.darkchronics.quake.matchmaking.MatchmakingManager;
 import ru.darkchronics.quake.misc.MiscUtil;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public abstract class MenuGenerators {
-    public static Menu mainMenu() {
-        Menu menu = new Menu(Bukkit.createInventory(null, 9, Component.text("Main menu")));
+    public static Menu mainMenu(Locale locale) {
+        Menu menu = new Menu(Bukkit.createInventory(null, 9, Component.text(TranslationManager.t("MENU_MAIN", locale))));
 
         ItemStack partyOption = new ItemStack(Material.OAK_BOAT);
-        MiscUtil.setNameForItemStack(partyOption, Component.text("Party").decoration(TextDecoration.ITALIC, false));
+        MiscUtil.setNameForItemStack(partyOption, Component.text(TranslationManager.t("PARTY", locale)).decoration(TextDecoration.ITALIC, false));
         ItemStack matchmakingOption = new ItemStack(Material.CROSSBOW);
-        MiscUtil.setNameForItemStack(matchmakingOption, Component.text("Matchmaking").decoration(TextDecoration.ITALIC, false));
+        MiscUtil.setNameForItemStack(matchmakingOption, Component.text(TranslationManager.t("MENU_MATCHMAKING", locale)).decoration(TextDecoration.ITALIC, false));
 
         menu.setItem(3, partyOption, Menu.Handler.fromLMB(player -> {
             MenuManager.INSTANCE.showMenu(MenuGenerators.partyMenu(player), player);
@@ -32,14 +34,14 @@ public abstract class MenuGenerators {
             if (QuakePlugin.INSTANCE.userStates.get(player).mmState.currentParty.leader == player)
                 MenuManager.INSTANCE.showMenu(new MatchmakingMenu(player), player);
             else
-                player.sendMessage("§cOnly party leader has access to matchmaking");
+                player.sendMessage(TranslationManager.t("ERROR_PARTY_MATCHMAKING_LEADERONLY", locale));
         }));
 
         return menu;
     }
 
     public static Menu partyMenu(Player viewer) {
-        Menu menu = new Menu(Bukkit.createInventory(null, 27, Component.text("Your party")));
+        Menu menu = new Menu(Bukkit.createInventory(null, 27, Component.text(TranslationManager.t("MENU_PARTY", viewer))));
         MatchmakingManager.Party party = QuakePlugin.INSTANCE.userStates.get(viewer)
                 .mmState.currentParty;
 
@@ -60,18 +62,18 @@ public abstract class MenuGenerators {
             MiscUtil.setNameForItemStack(playerOption, partyMember.displayName().decoration(TextDecoration.ITALIC, false));
             ArrayList<Component> playerLore = new ArrayList<>(2);
             if (partyMember == party.leader)
-                playerLore.add(Component.text("Leader").decoration(TextDecoration.ITALIC, false).color(TextColor.color(0x55FF55)));
+                playerLore.add(Component.text(TranslationManager.t("MENU_LEADER", viewer)).decoration(TextDecoration.ITALIC, false).color(TextColor.color(0x55FF55)));
             if (viewer == party.leader && !(partyMember == viewer))
-                playerLore.add(Component.text("Double left click to kick the player").decoration(TextDecoration.ITALIC, false).color(TextColor.color(0xAA0000)));
+                playerLore.add(Component.text(TranslationManager.t("MENU_KICKPLAYER", viewer)).decoration(TextDecoration.ITALIC, false).color(TextColor.color(0xAA0000)));
 
             playerOption.lore(playerLore);
             menu.setItem(index, playerOption, handler);
         }
 
         ItemStack leaveOption = new ItemStack(Material.ACACIA_DOOR);
-        MiscUtil.setNameForItemStack(leaveOption, Component.text("Leave").decoration(TextDecoration.ITALIC, false));
+        MiscUtil.setNameForItemStack(leaveOption, Component.text(TranslationManager.t("MENU_LEAVEPARTY", viewer)).decoration(TextDecoration.ITALIC, false));
         if (party.size() == 1)
-            leaveOption.lore(List.of(Component.text("Disabled - you are the only one in this party").decoration(TextDecoration.ITALIC, false).color(TextColor.color(0xFF5555))));
+            leaveOption.lore(List.of(Component.text(TranslationManager.t("MENU_DISABLED_PARTYSINGLE", viewer)).decoration(TextDecoration.ITALIC, false).color(TextColor.color(0xFF5555))));
         menu.setItem(26, leaveOption, Menu.Handler.fromLMB(player -> {
             if (party.size() != 1) {
                 player.performCommand("quake party leave");
@@ -80,9 +82,9 @@ public abstract class MenuGenerators {
         }));
 
         ItemStack backOption = new ItemStack(Material.ARROW);
-        MiscUtil.setNameForItemStack(backOption, Component.text("Back").decoration(TextDecoration.ITALIC, false));
+        MiscUtil.setNameForItemStack(backOption, Component.text(TranslationManager.t("MENU_BACK", viewer)).decoration(TextDecoration.ITALIC, false));
         menu.setItem(25, backOption, Menu.Handler.fromLMB(player -> {
-            MenuManager.INSTANCE.showMenu(MenuGenerators.mainMenu(), viewer);
+            MenuManager.INSTANCE.showMenu(MenuGenerators.mainMenu(viewer.locale()), viewer);
         }));
 
         return menu;

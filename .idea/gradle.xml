@@ -6,11 +6,13 @@
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="gradleHome" value="/usr/share/java/gradle" />
+        <option name="gradleJvm" value="jbr-17 (2)" />
         <option name="modules">
           <set>
-            <option value="$PROJECT_DIR$" />
+            <option value="/mnt/dumpster/Development/darkchronics/quake" />
           </set>
         </option>
+        <option name="resolveExternalAnnotations" value="true" />
       </GradleProjectSettings>
     </option>
   </component>

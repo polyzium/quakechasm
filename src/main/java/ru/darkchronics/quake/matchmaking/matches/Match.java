@@ -24,9 +24,11 @@ import ru.darkchronics.quake.matchmaking.map.QMap;
 import ru.darkchronics.quake.misc.Chatroom;
 import ru.darkchronics.quake.misc.MiscUtil;
 import ru.darkchronics.quake.misc.Pair;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 public abstract class Match implements ForwardingAudience {
     protected QMap map;
@@ -60,7 +62,7 @@ public abstract class Match implements ForwardingAudience {
         return this.map;
     }
     public static String getNameStatic() {
-        return "Base match";
+        return "MATCH_BASE";
     }
     public String getName() {
         return getNameStatic();
@@ -157,9 +159,8 @@ public abstract class Match implements ForwardingAudience {
         userState.switchChat(Chatroom.GLOBAL);
         player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
 
-        // TODO teleport to lobby
         MiscUtil.teleEffect(player.getLocation(), true);
-//        player.teleport(new Location(player.getWorld(), 0, 64, 0));
+        player.teleport(QuakePlugin.LOBBY);
         userState.reset();
 
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
@@ -174,7 +175,7 @@ public abstract class Match implements ForwardingAudience {
         List<Team> allowedTeams = this.allowedTeams();
         return allowedTeams.contains(Team.RED) && allowedTeams.contains(Team.BLUE);
     };
-    public static Component getDeathMessage(Player victim, Entity attacker, DamageCause cause) {
+    public static Component getDeathMessage(Player victim, Entity attacker, DamageCause cause, Locale locale) {
         // TODO Vault API for prefixes and shit
         TextComponent component;
         if (attacker == null || victim == attacker) {
@@ -188,7 +189,7 @@ public abstract class Match implements ForwardingAudience {
             if (deathMsg == null) {
                 deathMsg = new Pair<>(cause.name(), "");
             }
-            component = Component.text(victim.getName()+" "+deathMsg.getLeft()+" "+attacker.getName()+deathMsg.getRight());
+            component = Component.text(victim.getName()+" "+ TranslationManager.t(deathMsg.getLeft(), locale)+" "+attacker.getName()+TranslationManager.t(deathMsg.getRight(), locale));
         }
 
         return component.color(TextColor.color(0xff3f3f));

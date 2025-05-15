@@ -15,6 +15,7 @@ import ru.darkchronics.quake.game.combat.DamageCause;
 import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.map.QMap;
 import ru.darkchronics.quake.misc.Pair;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 import java.time.Duration;
 import java.util.*;
@@ -30,7 +31,7 @@ public class FFAMatch extends Match {
     }
 
     public static String getNameStatic() {
-        return "Free For All";
+        return "MATCH_FFA_NAME";
     }
     public String getName() {
         return getNameStatic();
@@ -77,16 +78,18 @@ public class FFAMatch extends Match {
     }
 
     public void warmup() {
-        FFAMatch self = this;
+        Set<Player> players = this.players.keySet();
         this.warmupTask = new BukkitRunnable() {
             int count = 10;
             @Override
             public void run() {
-                self.showTitle(Title.title(
-                        Component.text(self.getName()),
-                        Component.text("Match starts in: "+count),
-                        Title.Times.times(Duration.ZERO, Duration.ofMillis(1200), Duration.ZERO)
-                ));
+                for (Player player : players) {
+                    player.showTitle(Title.title(
+                            Component.text(TranslationManager.t(getName(), player)),
+                            Component.text(TranslationManager.t("MATCH_COUNTDOWN", player) + count),
+                            Title.Times.times(Duration.ZERO, Duration.ofMillis(1200), Duration.ZERO)
+                    ));
+                }
 
                 count--;
 
@@ -112,11 +115,13 @@ public class FFAMatch extends Match {
         started = true;
 
         this.updateScoreboard();
-        this.showTitle(Title.title(
-                Component.text("Fight!"),
-                Component.text("Get "+fraglimit+" frags").color(TextColor.color(0xff0000)),
-                Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofMillis(500))
-        ));
+        for (Player player : this.players.keySet()) {
+            player.showTitle(Title.title(
+                    Component.text(TranslationManager.t("MATCH_START", player)),
+                    Component.text(TranslationManager.t("MATCH_GENERIC_STARTMSG_1", player)+fraglimit+TranslationManager.t("MATCH_GENERIC_STARTMSG_2", player)).color(TextColor.color(0xff0000)),
+                    Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofMillis(500))
+            ));
+        }
     }
 
     public void end() {
@@ -164,7 +169,9 @@ public class FFAMatch extends Match {
 
     @Override
     public void onDeath(Player victim, Entity attacker, DamageCause cause) {
-        this.sendMessage(getDeathMessage(victim, attacker, cause));
+        for (Player viewer : this.players.keySet()) {
+            viewer.sendMessage(getDeathMessage(victim, attacker, cause, viewer.locale()));
+        }
 
         if (!started) return;
 
@@ -185,32 +192,32 @@ public class FFAMatch extends Match {
             TextColor placeColor;
             switch (place.getLeft()) {
                 case 1:
-                    formattedPlace += "st";
+                    formattedPlace += TranslationManager.t("FIRST_SUFFIX", pAttacker);
                     placeColor = TextColor.color(0x0000FF);
                     break;
                 case 2:
-                    formattedPlace += "nd";
+                    formattedPlace += TranslationManager.t("SECOND_SUFFIX", pAttacker);
                     placeColor = TextColor.color(0xFF0000);
                     break;
                 case 3:
-                    formattedPlace += "rd";
+                    formattedPlace += TranslationManager.t("THIRD_SUFFIX", pAttacker);
                     placeColor = TextColor.color(0xFFFF00);
                     break;
                 default:
-                    formattedPlace += "th";
+                    formattedPlace += TranslationManager.t("NTH_SUFFIX", pAttacker);
                     placeColor = TextColor.color(0xFFFFFF);
                     break;
             }
 
             Component placeComponent;
             if (place.getRight()) // tied
-                placeComponent = Component.text("Tied for ").color(TextColor.color(0xFFFFFF)).append(Component.text(formattedPlace).color(placeColor));
+                placeComponent = Component.text(TranslationManager.t("MATCH_SCORE_TIEDFOR", pAttacker)).color(TextColor.color(0xFFFFFF)).append(Component.text(formattedPlace).color(placeColor));
             else
                 placeComponent = Component.text(formattedPlace).color(placeColor);
 
             pAttacker.showTitle(Title.title(
-                    Component.text("You fragged "+victim.getName()),
-                    placeComponent.append(Component.text(" place with "+scores.get(pAttacker)).color(TextColor.color(0xFFFFFF))),
+                    Component.text(TranslationManager.t("GAME_KILL_BEGIN", pAttacker)+victim.getName()),
+                    placeComponent.append(Component.text(TranslationManager.t("MATCH_SCORE_PLACE", pAttacker)+scores.get(pAttacker)).color(TextColor.color(0xFFFFFF))),
                     Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofMillis(500))
             ));
         } else if (attacker == null || victim == attacker) {
@@ -230,13 +237,15 @@ public class FFAMatch extends Match {
         int winningScore = winningPlayerEntry.getValue();
 
         if (winningScore == fraglimit) {
-            this.showTitle(Title.title(
-                    Component.text(winningPlayer.getName() + " wins"),
-                    Component.empty(),
-                    Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofMillis(500))
-            ));
-            this.sendMessage("Scores for this match:");
-            this.sendMessage(this.getScoreboard());
+            for (Player player : this.players.keySet()) {
+                player.showTitle(Title.title(
+                        Component.text(winningPlayer.getName() + TranslationManager.t("MATCH_GENERIC_WINS", player)),
+                        Component.empty(),
+                        Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofMillis(500))
+                ));
+                player.sendMessage(TranslationManager.t("MATCH_AFTERMATH_SCOREBOARD_BEGIN", player));
+                player.sendMessage(this.getScoreboard());
+            }
             this.end();
         }
     }

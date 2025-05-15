@@ -1,9 +1,9 @@
 package ru.darkchronics.quake.matchmaking.matches;
 
 public enum MatchMode {
-    FFA("Free For All"),
-    TDM("Team Deathmatch"),
-    CTF("Capture The Flag");
+    FFA("MATCH_FFA_NAME"),
+    TDM("MATCH_TDM_NAME"),
+    CTF("MATCH_CTF_NAME");
 
     private final String displayName;
 

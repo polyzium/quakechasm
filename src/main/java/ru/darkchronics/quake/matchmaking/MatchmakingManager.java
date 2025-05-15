@@ -20,6 +20,7 @@ import ru.darkchronics.quake.matchmaking.map.QMap;
 import ru.darkchronics.quake.matchmaking.matches.Match;
 import ru.darkchronics.quake.matchmaking.matches.MatchManager;
 import ru.darkchronics.quake.matchmaking.matches.MatchMode;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 import java.time.Duration;
 import java.util.*;
@@ -33,8 +34,6 @@ public class MatchmakingManager {
     }
 
     public static class Party implements ForwardingAudience {
-        public static Component PREFIX = Component.text("[PARTY] ").decorate(TextDecoration.BOLD);
-
         public ArrayList<Player> getPlayers() {
             return players;
         }
@@ -48,21 +47,25 @@ public class MatchmakingManager {
             this.leader = leader;
         }
 
+        public static Component localizedPrefix(Locale locale) {
+            return Component.text(TranslationManager.t("PARTY_PREFIX", locale)).decorate(TextDecoration.BOLD);
+        }
+
         public void addPlayer(Player player) {
             this.players.add(player);
             QuakePlugin.INSTANCE.userStates.get(player)
                     .mmState.currentParty = this;
-            this.sendMessage(Component.textOfChildren(PREFIX, player.displayName(), Component.text(" joined")));
+            this.sendMessage(Component.textOfChildren(localizedPrefix(this.leader.locale()), player.displayName(), Component.text(" joined")));
         }
 
         public void removePlayer(Player player) {
             this.players.remove(player);
             QuakePlugin.INSTANCE.userStates.get(player)
                     .mmState.currentParty = new Party(player);
-            this.sendMessage(Component.textOfChildren(PREFIX, player.displayName(), Component.text(" left")));
+            this.sendMessage(Component.textOfChildren(localizedPrefix(this.leader.locale()), player.displayName(), Component.text(" left")));
             if (player == this.leader && !this.players.isEmpty()) {
                 leader = this.players.get(0);
-                this.sendMessage(Component.textOfChildren(PREFIX, this.leader.displayName(), Component.text(" is the new party leader")));
+                this.sendMessage(Component.textOfChildren(localizedPrefix(this.leader.locale()), this.leader.displayName(), Component.text(" is the new party leader")));
             }
         }
 
@@ -103,14 +106,14 @@ public class MatchmakingManager {
             this.selectedMaps = new ArrayList<>(selectedMaps);
             this.matchMode = matchMode;
             this.party = party;
-            this.statusBar = BossBar.bossBar(Component.text("Searching for matches: 00:00"), 0, BossBar.Color.BLUE, BossBar.Overlay.PROGRESS);
+            this.statusBar = BossBar.bossBar(Component.text(TranslationManager.t("MATCHMAKING_SEARCH_START_STATUSBAR_INIT", party.leader)), 0, BossBar.Color.BLUE, BossBar.Overlay.PROGRESS);
             this.timeTask = new BukkitRunnable() {
                 int s = 0;
                 @Override
                 public void run() {
                     s++;
                     statusBar.name(Component.text(
-                            "Searching for matches: "+String.format("%02d:%02d", (s % 3600) / 60, (s % 60))
+                            TranslationManager.t("MATCHMAKING_SEARCH_START_STATUSBAR", party.leader)+String.format("%02d:%02d", (s % 3600) / 60, (s % 60))
                     ));
                     statusBar.progress((float) (s % 60)/60);
                 }
@@ -154,7 +157,7 @@ public class MatchmakingManager {
             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
             userState.mmState.currentPendingMatch = null;
             userState.mmState.acceptedPendingMatch = this;
-            player.sendMessage("Waiting for other players...");
+            player.sendMessage(TranslationManager.t("MATCHMAKING_MATCH_ACCEPT_WAITING", player));
 
             for (Player acceptedPlayer : acceptedPlayers) {
                 acceptedPlayer.showTitle(Title.title(
@@ -177,9 +180,9 @@ public class MatchmakingManager {
                 if (match == null) {
                     QuakePlugin.INSTANCE.getLogger().severe("Unable to create a "+matchFactory.getName()+" match. Please contact the plugin developers.");
                     for (Player acceptedPlayer : acceptedPlayers) {
-                        acceptedPlayer.sendMessage("§cWe are sorry, something has gone terribly wrong on the matchmaking side. Please contact the server admins.");
+                        acceptedPlayer.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_GENERIC", player));
                         INSTANCE.stopSearching(acceptedPlayer);
-                        acceptedPlayer.sendMessage("§cYour match search has been canceled to prevent further errors.");
+                        acceptedPlayer.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_SEARCH_OHSHITITSFUCKED", player));
                     }
                     return;
                 }
@@ -226,7 +229,7 @@ public class MatchmakingManager {
                 INSTANCE.findPendingParty(acceptedPlayer)
                         .isAcceptingMatch = false;
 
-                acceptedPlayer.sendMessage("§eOne or more of the players did not accept the match. Search continues.");
+                acceptedPlayer.sendMessage(TranslationManager.t("WARNING_MATCHMAKING_CONTINUESEARCH", acceptedPlayer));
             }
 
             canceled = true;
@@ -263,15 +266,26 @@ public class MatchmakingManager {
             }
         }
         if (mapsUnfit) {
-            party.sendMessage("§cTry choosing a different map pool or mode.");
+            for (Player player : party.players) {
+                player.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_MAP_UNFIT_3", player));
+            }
             return;
         }
 
         QMap map = QuakePlugin.INSTANCE.getMap(selectedMaps.get(0));
         int playersPerTeam = map.neededPlayers / 2;
         if (playersPerTeam < party.size()) {
-            party.sendMessage("§cYour party has "+party.size()+" players instead of the maximum "+playersPerTeam+" allowed for the map \""+map.displayName+"\". " +
-                    "Please remove one or more players from your party.");
+            for (Player player : party.players) {
+                party.sendMessage(
+                        TranslationManager.t("ERROR_PARTY_TOOBIG_1", player)+
+                                party.size()+
+                                TranslationManager.t("ERROR_PARTY_TOOBIG_2", player)+
+                                playersPerTeam+
+                                TranslationManager.t("ERROR_PARTY_TOOBIG_3", player)+
+                                map.displayName+"\". "+
+                                TranslationManager.t("ERROR_PARTY_TOOBIG_4", player)
+                );
+            }
             return;
         }
 
@@ -282,9 +296,12 @@ public class MatchmakingManager {
 
         for (Player partyPlayer : party.players) {
             if (partyPlayer == party.leader)
-                partyPlayer.sendMessage("Searching for matches... \nUse \"/quake matchmaking cancel\" to stop searching");
+//                partyPlayer.sendMessage("Searching for matches... \nUse \"/quake matchmaking cancel\" to stop searching");
+                partyPlayer.sendMessage(TranslationManager.t("MATCHMAKING_SEARCH_START", partyPlayer));
             else
-                partyPlayer.sendMessage(Component.textOfChildren(Party.PREFIX, party.leader.displayName(),
+//                partyPlayer.sendMessage(Component.textOfChildren(Party.localizedPrefix(), party.leader.displayName(),
+//                        Component.text(" started search for matches: mode "+matchMode.toString()+", maps "+String.join(", ", selectedMaps)))
+                partyPlayer.sendMessage(Component.textOfChildren(Party.localizedPrefix(partyPlayer.locale()), party.leader.displayName(),
                         Component.text(" started search for matches: mode "+matchMode.toString()+", maps "+String.join(", ", selectedMaps)))
                 );
         }
@@ -304,8 +321,8 @@ public class MatchmakingManager {
 
         for (Player partyPlayer : pendingSelf.party.players) {
             if (partyPlayer == pendingSelf.party.leader) continue;
-            partyPlayer.sendMessage(Component.textOfChildren(Party.PREFIX, pendingSelf.party.leader.displayName(),
-                    Component.text(" stopped search for matches")
+            partyPlayer.sendMessage(Component.textOfChildren(Party.localizedPrefix(partyPlayer.locale()), pendingSelf.party.leader.displayName(),
+                    Component.text(TranslationManager.t("PARTY_MATCHMAKING_CANCELED", partyPlayer))
             ));
         }
 
@@ -406,7 +423,7 @@ public class MatchmakingManager {
     }
 
     private void onMatchFound(PendingParty pendingParty, PendingMatch pendingMatch) {
-        pendingParty.party.sendMessage("Your match has been found:");
+        pendingParty.party.sendMessage(TranslationManager.t("MATCHMAKING_MATCH_ACCEPT_CHAT_1", pendingParty.party.leader));
         pendingParty.party.sendMessage("§b"+pendingMatch.map.displayName+" | "+pendingMatch.matchMode.getDisplayName());
         pendingParty.party.sendMessage("Type \"/quake matchmaking accept\" to accept the match.");
         pendingParty.isAcceptingMatch = true;
@@ -425,8 +442,8 @@ public class MatchmakingManager {
                     if (pendingMatch.acceptedPlayers.contains(partyPlayer)) continue;
 
                     partyPlayer.showTitle(Title.title(
-                            Component.text("Your game is ready!"),
-                            Component.text("You have " + secs + " seconds to accept"),
+                            Component.text(TranslationManager.t("MATCHMAKING_MATCH_ACCEPT_1", partyPlayer)),
+                            Component.text(TranslationManager.t("MATCHMAKING_MATCH_ACCEPT_2", partyPlayer) + secs + TranslationManager.t("MATCHMAKING_MATCH_ACCEPT_3", partyPlayer)),
                             Title.Times.times(Duration.ZERO, Duration.ofMillis(1200), Duration.ZERO)
                     ));
                 }
@@ -435,11 +452,11 @@ public class MatchmakingManager {
                     pendingMatch.cancel();
                     for (Player partyPlayer : pendingParty.party.players) {
                         if (pendingMatch.acceptedPlayers.contains(partyPlayer)) continue;
-                        partyPlayer.sendMessage("§cYour game was canceled because you did not accept.");
+                        partyPlayer.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_CANCELEDMATCHNOACCEPT", pendingParty.party.leader));
                     }
                     INSTANCE.stopSearching(pendingParty.party.leader);
                     pendingParty.party.sendMessage(Component.textOfChildren(
-                            Party.PREFIX, Component.text("Game canceled, party leader did not accept")
+                            Party.localizedPrefix(pendingParty.party.leader.locale()), Component.text(TranslationManager.t("PARTY_MATCHMAKING_SEARCH_LEADERDIDNTACCEPT", pendingParty.party.leader))
                     ));
 
                     cancel();

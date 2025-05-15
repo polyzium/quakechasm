@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="HotSwapAgentPluginSettingsProvider">
+    <option name="agentPath" value="$PROJECT_DIR$/../../papermc-test/jbr-17.0.10-linux-x64-b1207.1/lib/hotswap/hotswap-agent.jar" />
+    <option name="enableAgentForAllConfiguration" value="true" />
+  </component>
+</project>

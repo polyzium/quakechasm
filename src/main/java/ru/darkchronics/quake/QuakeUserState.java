@@ -19,6 +19,7 @@ import ru.darkchronics.quake.matchmaking.Team;
 import ru.darkchronics.quake.matchmaking.matches.Match;
 import ru.darkchronics.quake.misc.Chatroom;
 import ru.darkchronics.quake.misc.MiscUtil;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,7 +77,7 @@ public class QuakeUserState {
         ItemMeta mgMeta = machinegun.getItemMeta();
         mgMeta.setCustomModelData(WeaponType.MACHINEGUN);
         mgMeta.displayName(
-                Component.text("Machinegun").
+                Component.text(TranslationManager.t("PICKUP_WEAPON_MACHINEGUN", this.player)).
                         decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.byBoolean(false))
         );
         machinegun.setItemMeta(mgMeta);
@@ -111,7 +112,7 @@ public class QuakeUserState {
                 this.currentMatch == null &&
                 (chatroom == Chatroom.MATCH || chatroom == Chatroom.TEAM)
         ) {
-            player.sendMessage("§cUnable to switch to "+chatroom.name()+" chat, you are not in a match");
+            player.sendMessage(TranslationManager.t("ERROR_CHAT_SWITCH_NOMATCH_1", player)+chatroom.name()+TranslationManager.t("ERROR_CHAT_SWITCH_NOMATCH_2", player));
             return;
         }
 
@@ -120,13 +121,13 @@ public class QuakeUserState {
                         this.currentMatch.allowedTeams().stream().allMatch(team -> team == Team.FREE) &&
                         chatroom == Chatroom.TEAM
         ) {
-            player.sendMessage("§cThis is not a team match");
+            player.sendMessage(TranslationManager.t("ERROR_MATCH_NOTTEAM", player));
             return;
         }
 
         this.currentChat = chatroom;
         player.sendMessage(Component.textOfChildren(
-            Component.text("You have switched to "), this.currentChat.getPrefix().decoration(TextDecoration.BOLD, false), Component.text(" chat")
+            Component.text(TranslationManager.t("COMMAND_CHAT_SWITCH_1", player)), this.currentChat.getPrefix().decoration(TextDecoration.BOLD, false), Component.text(TranslationManager.t("COMMAND_CHAT_SWITCH_2", player))
         ));
     }
 

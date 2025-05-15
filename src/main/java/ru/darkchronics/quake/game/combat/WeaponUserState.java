@@ -9,6 +9,7 @@ import org.bukkit.scheduler.BukkitTask;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.game.combat.powerup.Powerup;
 import ru.darkchronics.quake.game.combat.powerup.PowerupType;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 import java.util.Arrays;
 
@@ -87,7 +88,7 @@ public class WeaponUserState {
                                 WeaponUtil.fireBFG(player);
                                 break;
                             default:
-                                player.sendMessage("This weapon is unknown or not yet implemented");
+                                player.sendMessage(TranslationManager.t("ERROR_WEAPON_UNKNOWN", player));
                                 cancel();
                                 return;
                         }

@@ -40,6 +40,8 @@ import java.util.stream.Collectors;
 
 public class QuakePlugin extends JavaPlugin {
     public static QuakePlugin INSTANCE;
+    public static Location LOBBY;
+
     public ArrayList<Trigger> triggers;
     public Map<Player,QuakeUserState> userStates;
     private float rotatorAngle;
@@ -316,6 +318,15 @@ public class QuakePlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new TriggerListener(), this);
         getServer().getPluginManager().registerEvents(new CombatListener(), this);
         getServer().getPluginManager().registerEvents(new MenuListener(), this);
+
+        // lobby
+        getLogger().info("Initializing lobby world");
+        World lobbyWorld = new WorldCreator("flat")
+                .createWorld();
+        LOBBY = new Location(
+                lobbyWorld,
+                2977, 89, 2992
+        );
 
         // other stuff
         getLogger().info("Initializing match manager");

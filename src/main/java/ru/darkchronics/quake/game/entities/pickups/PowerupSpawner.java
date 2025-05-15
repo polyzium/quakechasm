@@ -19,6 +19,7 @@ import ru.darkchronics.quake.game.combat.powerup.PowerupType;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
 import ru.darkchronics.quake.hud.Hud;
 import ru.darkchronics.quake.matchmaking.matches.Match;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 public class PowerupSpawner extends Spawner {
     private static final int RESPAWN_TIME = 20*60;
@@ -104,7 +105,7 @@ public class PowerupSpawner extends Spawner {
         } else
             player.getWorld().playSound(player, Powerup.SOUNDS.get(type), 0.5f, 1f);
 
-        Hud.pickupMessage(player, Component.text(Powerup.NAMES.get(type)));
+        Hud.pickupMessage(player, Component.text(TranslationManager.t(Powerup.NAMES.get(type), player)));
 
         if (!this.isDrop)
             // Respawn in 1 minute

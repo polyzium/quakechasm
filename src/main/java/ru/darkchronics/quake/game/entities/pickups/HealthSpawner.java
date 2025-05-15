@@ -14,6 +14,7 @@ import org.bukkit.scheduler.BukkitTask;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
 import ru.darkchronics.quake.hud.Hud;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 public class HealthSpawner extends Spawner {
     private ItemStack itemForRespawn;
@@ -87,7 +88,7 @@ public class HealthSpawner extends Spawner {
         this.display.setItemStack(new ItemStack(Material.AIR)); // Make invisible
         player.getWorld().playSound(player, "quake.items.health.pickup_"+this.health, 0.5f, 1f);
         if (this.health == 20)
-            Hud.pickupMessage(player, Component.text("Mega Health"));
+            Hud.pickupMessage(player, Component.text(TranslationManager.t("PICKUP_HEALTH_MEGA", player)));
         else
             Hud.pickupMessage(player, Component.text(this.health*5).append(Component.text(" Health")));
 

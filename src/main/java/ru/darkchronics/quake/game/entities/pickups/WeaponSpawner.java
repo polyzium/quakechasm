@@ -2,6 +2,7 @@ package ru.darkchronics.quake.game.entities.pickups;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
@@ -16,12 +17,23 @@ import ru.darkchronics.quake.game.combat.WeaponType;
 import ru.darkchronics.quake.game.entities.QEntityUtil;
 import ru.darkchronics.quake.hud.Hud;
 import ru.darkchronics.quake.matchmaking.Team;
+import ru.darkchronics.quake.misc.TranslationManager;
 
 import java.util.Objects;
 
 public class WeaponSpawner extends Spawner {
     private ItemStack itemForRespawn;
     private BukkitTask respawnTask;
+    public final static String[] NAMES = {
+        "PICKUP_WEAPON_MACHINEGUN",
+        "PICKUP_WEAPON_SHOTGUN",
+        "PICKUP_WEAPON_ROCKETLAUNCHER",
+        "PICKUP_WEAPON_LIGHTNINGGUN",
+        "PICKUP_WEAPON_RAILGUN",
+        "PICKUP_WEAPON_PLASMAGUN",
+        "PICKUP_WEAPON_BFG"
+    };
+
     public WeaponSpawner(int weaponIndex, World world, Location location) {
         super(new ItemStack(Material.AIR), world, location);
 
@@ -51,16 +63,7 @@ public class WeaponSpawner extends Spawner {
     public static ItemStack getWeapon(int index) {
         ItemStack itemStack = new ItemStack(Material.CARROT_ON_A_STICK);
         ItemMeta weaponMeta = itemStack.getItemMeta();
-        String weaponName = switch (index) {
-            case WeaponType.MACHINEGUN -> "Machinegun";
-            case WeaponType.SHOTGUN -> "Shotgun";
-            case WeaponType.ROCKET_LAUNCHER -> "Rocket Launcher";
-            case WeaponType.LIGHTNING_GUN -> "Lightning Gun";
-            case WeaponType.RAILGUN -> "Railgun";
-            case WeaponType.PLASMA_GUN -> "Plasma Gun";
-            case WeaponType.BFG -> "BFG10K";
-            default -> throw new IllegalStateException("Weapon out of range");
-        };
+        String weaponName = NAMES[index];
         weaponMeta.displayName(
                 Component.text(weaponName).
                         decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.byBoolean(false))
@@ -77,12 +80,17 @@ public class WeaponSpawner extends Spawner {
         if (item.isEmpty())
             return;
 
+        ItemMeta weaponMeta = item.getItemMeta();
+        int weaponIndex = weaponMeta.getCustomModelData();
+        weaponMeta.displayName(Component.text(TranslationManager.t(NAMES[weaponIndex], player)));
+        item.setItemMeta(weaponMeta);
+
         this.itemForRespawn = item;
 
         CombatListener.sortGun(item, player);
         super.display.setItemStack(new ItemStack(Material.AIR)); // Make invisible
         player.getWorld().playSound(player, "quake.weapons.pickup", 0.5f, 1f);
-        Hud.pickupMessage(player, Objects.requireNonNull(item.getItemMeta().displayName()));
+        Hud.pickupMessage(player, Objects.requireNonNull(weaponMeta.displayName()));
 
         // Respawn in 5 seconds, or 30 seconds if team based
         QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
