@@ -1,8 +1,8 @@
-name: DarkChronics-Quake
+name: Quakechasm
 version: 1.0.0-alpha
-main: ru.darkchronics.quake.QuakePlugin
+main: com.github.polyzium.quakechasm.QuakePlugin
 depend: [CommandAPI, WorldEdit]
 description: Quake minigame for DC minigames server
 author: Polyzium
-website: https://darkchronics.ru
+website: https://github.com/polyzium/quakechasm
 api-version: '1.21'
