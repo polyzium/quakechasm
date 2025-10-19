@@ -79,7 +79,7 @@ public class QuakeUserState {
         this.activePowerups.clear();
         this.hud.powerupBoard.update();
         this.player.setHealth(20);
-        this.player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(20);
+        this.player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(20);
         this.player.getInventory().clear();
     }
 
@@ -107,7 +107,7 @@ public class QuakeUserState {
         player.getInventory().setHeldItemSlot(0);
 
         // Set health to 125 Quake HP
-        player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(25);
+        player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(25);
         player.setHealth(25);
         this.startHealthDecreaser();
     }
@@ -182,14 +182,14 @@ public class QuakeUserState {
 
                 double currentHealth = player.getHealth();
                 if (currentHealth <= 20) {
-                    player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(20);
+                    player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(20);
                     this.cancel();
                     healthDecreaser = null;
                     return;
                 }
                 float newHealth = Math.round((currentHealth * 5) - 1) / 5f;
                 player.setHealth(newHealth);
-                player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(newHealth);
+                player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(newHealth);
             }
         };
         healthDecreaser.runTaskTimer(QuakePlugin.INSTANCE, 20, 20);

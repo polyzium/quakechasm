@@ -45,18 +45,21 @@ public abstract class MiscUtil {
         else
             targetLoc.getWorld().playSound(targetLoc, "quake.world.tele_out", 1, 1);
 
-        world.spawnParticle(Particle.REDSTONE, targetLoc, 32, 0.25, 1, 0.25, 1, new Particle.DustOptions(Color.fromRGB(0xFF00FF), 1));
-        world.spawnParticle(Particle.SPELL_INSTANT, targetLoc, 32, 0.25, 1, 0.25, 1);
+        world.spawnParticle(Particle.DUST, targetLoc, 32, 0.25, 1, 0.25, 1, new Particle.DustOptions(Color.fromRGB(0xFF00FF), 1));
+        world.spawnParticle(Particle.INSTANT_EFFECT, targetLoc, 32, 0.25, 1, 0.25, 1);
     }
 
     public static ArrayList<Vector> calculateTrajectory(Location startLoc, Vector initialVelocity) {
         ArrayList<Vector> trajectory = new ArrayList<>(32);
         Vector currentVelocity = initialVelocity.clone();
         Vector currentPos = startLoc.toVector();
+        World world = startLoc.getWorld();
 
         trajectory.add(currentPos.clone());
 
         for (int i = 0; i < 127; i++) {
+            Vector previousPos = currentPos.clone();
+            
             if (i > 2) {
                 currentVelocity.setX(currentVelocity.getX() * AIR_DRAG);
                 currentVelocity.setZ(currentVelocity.getZ() * AIR_DRAG);
@@ -64,13 +67,44 @@ public abstract class MiscUtil {
             }
             currentPos.add(currentVelocity);
 
+            // Raytrace between previous and current position to detect walls
+            if (raytraceHitsBlock(world, previousPos, currentPos)) {
+                break;
+            }
+
             trajectory.add(currentPos.clone());
 
-            if (startLoc.getWorld().getBlockAt(currentPos.toLocation(startLoc.getWorld())).getType() != Material.AIR)
+            if (world.getBlockAt(currentPos.toLocation(world)).getType() != Material.AIR)
                 break;
         }
 
         return trajectory;
+    }
+
+    private static boolean raytraceHitsBlock(World world, Vector start, Vector end) {
+        Vector direction = end.clone().subtract(start);
+        double distance = direction.length();
+        
+        if (distance == 0) {
+            return false;
+        }
+        
+        direction.normalize();
+        
+        // Step through the ray in small increments (0.1 blocks)
+        double step = 0.1;
+        int steps = (int) Math.ceil(distance / step);
+        
+        for (int i = 0; i <= steps; i++) {
+            Vector checkPos = start.clone().add(direction.clone().multiply(i * step));
+            Location checkLoc = checkPos.toLocation(world);
+            
+            if (world.getBlockAt(checkLoc).getType() != Material.AIR) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     public static String[] getEnumNames(Class<? extends Enum<?>> e) {

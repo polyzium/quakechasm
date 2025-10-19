@@ -187,7 +187,7 @@ public class CombatListener implements Listener {
 
         double finalMaxHealth = player.getHealth() - finalDamage;
         if (finalMaxHealth < 20) finalMaxHealth = 20;
-        Objects.requireNonNull(player.getAttribute(Attribute.GENERIC_MAX_HEALTH)).setBaseValue(finalMaxHealth);
+        Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(finalMaxHealth);
 
         if (player.getHealth() - finalDamage <= 0) {
             DamageData lastDamage = userState.lastDamage;

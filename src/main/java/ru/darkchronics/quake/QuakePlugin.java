@@ -61,7 +61,7 @@ public class QuakePlugin extends JavaPlugin {
     public static QuakePlugin INSTANCE;
     public static Location LOBBY;
 
-    public ArrayList<Trigger> triggers;
+    public final ArrayList<Trigger> triggers = new ArrayList<>();
     public Map<Player,QuakeUserState> userStates;
     private float rotatorAngle;
     public ArrayList<QMap> maps;
@@ -155,7 +155,7 @@ public class QuakePlugin extends JavaPlugin {
     }
 
     public void loadTriggers() {
-        this.triggers = new ArrayList<>();
+        this.triggers.clear();
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) {
                 String entityType = QEntityUtil.getEntityType(entity);
@@ -168,7 +168,7 @@ public class QuakePlugin extends JavaPlugin {
 
     public void initPlayer(Player player) {
         player.setWalkSpeed(0.4f);
-        player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(20);
+        player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(20);
         this.userStates.put(player, new QuakeUserState(player));
     }
 
@@ -390,8 +390,12 @@ public class QuakePlugin extends JavaPlugin {
         this.triggers.clear();
 
         getLogger().info("Saving maps");
-        this.saveMaps();
-        this.maps.clear();
+        if (this.maps != null) {
+            this.saveMaps();
+            this.maps.clear();
+        } else {
+            getLogger().warning("Maps list is null, skipping save");
+        }
 
         getLogger().info("DarkChronics Quake disabled. Goodbye!");
     }

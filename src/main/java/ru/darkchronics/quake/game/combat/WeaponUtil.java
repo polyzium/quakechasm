@@ -125,12 +125,12 @@ public abstract class WeaponUtil {
             double z = startLocation.getZ() + ratio * (endLocation.getZ() - startLocation.getZ());
 
             Location particleLocation = new Location(world, x, y, z);
-            world.spawnParticle(Particle.REDSTONE, particleLocation, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x00FF00), 1), true);
+            world.spawnParticle(Particle.DUST, particleLocation, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x00FF00), 1), true);
         }
     }
 
     public static void bulletImpact(Location loc, Block hitBlock) {
-        loc.getWorld().spawnParticle(Particle.BLOCK_CRACK, loc, 8, hitBlock.getBlockData());
+        loc.getWorld().spawnParticle(Particle.BLOCK, loc, 8, hitBlock.getBlockData());
         loc.getWorld().spawnParticle(Particle.CRIT, loc, 4, 0, 0, 0, 0.25);
 
 //        loc.getWorld().playSound(loc, Sound.BLOCK_STONE_BREAK, 0.5f, 2);
@@ -147,7 +147,7 @@ public abstract class WeaponUtil {
     }
 
     public static void railImpact(Location loc, Block hitBlock) {
-        loc.getWorld().spawnParticle(Particle.SMOKE_LARGE, loc, 8, 0,0,0, 0.05);
+        loc.getWorld().spawnParticle(Particle.LARGE_SMOKE, loc, 8, 0,0,0, 0.05);
 
 //        loc.getWorld().playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 0.5f, 2);
 
@@ -234,15 +234,12 @@ public abstract class WeaponUtil {
     public static void fireRocket(Player player) {
         player.getWorld().playSound(player, "quake.weapons.rocket_launcher.fire", 0.5f, 1);
 
-        Location playerLocation = player.getLocation();
-        playerLocation.setY(playerLocation.getY() + (player.getHeight() - 0.35));
+        Location playerLocation = player.getEyeLocation();
         RayTraceResult raycast = cast(player, 0, 2);
         if (raycast != null) {
             Location hitLoc = raycast.getHitPosition().toLocation(player.getWorld());
-            if (playerLocation.distance(hitLoc) < 1.3) {
-                explodeRocket(hitLoc, player, null);
-                return;
-            }
+            explodeRocket(hitLoc, player, null);
+            return;
         }
 
         Snowball projectile = player.launchProjectile(Snowball.class);
@@ -272,7 +269,7 @@ public abstract class WeaponUtil {
                 projectile.setVelocity(vel);
 
                 Location ploc = projectile.getLocation();
-                ploc.getWorld().spawnParticle(Particle.SMOKE_LARGE, ploc, 1, 0,0,0, 0.02);
+                ploc.getWorld().spawnParticle(Particle.LARGE_SMOKE, ploc, 1, 0,0,0, 0.02);
 
                 this.ticks++;
             }
@@ -337,7 +334,7 @@ public abstract class WeaponUtil {
                 projectile.setVelocity(vel);
 
                 Location ploc = projectile.getLocation();
-                ploc.getWorld().spawnParticle(Particle.REDSTONE, ploc, 1, 0,0,0, new Particle.DustOptions(Color.fromRGB(0x00FFFF), 1));
+                ploc.getWorld().spawnParticle(Particle.DUST, ploc, 1, 0,0,0, new Particle.DustOptions(Color.fromRGB(0x00FFFF), 1));
 //                ploc.getWorld().spawnParticle(Particle.SMOKE_LARGE, ploc, 1, 0,0,0, 0.02);
 
                 this.ticks++;
@@ -391,10 +388,8 @@ public abstract class WeaponUtil {
         RayTraceResult raycast = cast(player, 0, 2);
         if (raycast != null) {
             Location hitLoc = raycast.getHitPosition().toLocation(player.getWorld());
-            if (playerLocation.distance(hitLoc) < 1.3) {
-                explodeBFG(hitLoc, player);
-                return;
-            }
+            explodeBFG(hitLoc, player);
+            return;
         }
 
         Snowball projectile = player.launchProjectile(Snowball.class);

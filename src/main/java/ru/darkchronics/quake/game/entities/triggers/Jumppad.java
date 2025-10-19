@@ -83,7 +83,7 @@ public class Jumppad implements Trigger {
                 }
 
                 Location loc2 = marker.getLocation();
-                loc2.getWorld().spawnParticle(Particle.SPELL_INSTANT, loc2, 1, 0.25, 0, 0.25, 0);
+                loc2.getWorld().spawnParticle(Particle.INSTANT_EFFECT, loc2, 1, 0.25, 0, 0.25, 0);
             }
         };
     }

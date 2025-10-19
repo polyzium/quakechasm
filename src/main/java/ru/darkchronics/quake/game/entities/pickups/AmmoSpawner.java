@@ -124,7 +124,7 @@ public class AmmoSpawner extends Spawner {
         if (!super.display.getItemStack().isEmpty()) return;
 
         display.setItemStack(this.itemForRespawn);
-        display.getWorld().spawnParticle(Particle.SPELL_INSTANT, display.getLocation(), 16, 0.5, 0.5, 0.5);
+        display.getWorld().spawnParticle(Particle.INSTANT_EFFECT, display.getLocation(), 16, 0.5, 0.5, 0.5);
         display.getWorld().playSound(display, "quake.items.respawn", 0.5f, 1f);
 
         if (this.respawnTask != null)

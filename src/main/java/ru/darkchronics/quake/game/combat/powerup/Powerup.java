@@ -104,7 +104,7 @@ public class Powerup {
                     }
 
                     player.getWorld().playSound(player, "quake.items.powerups.regeneration.heal", 0.5f, 1f);
-                    player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
+                    player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(maxHealth);
                     player.setHealth(newHealth);
                 }
 
