@@ -142,7 +142,7 @@ public class PowerupSpawner extends Spawner {
         if (!super.display.getItemStack().isEmpty() || this.isDrop) return;
 
         display.setItemStack(this.itemForRespawn);
-        display.getWorld().spawnParticle(Particle.SPELL_INSTANT, display.getLocation(), 16, 0.5, 0.5, 0.5);
+        display.getWorld().spawnParticle(Particle.INSTANT_EFFECT, display.getLocation(), 16, 0.5, 0.5, 0.5);
         if (belongingMatch != null) {
             for (Player mPlayer : belongingMatch.getPlayers()) {
                 mPlayer.playSound(Sound.sound(Key.key("quake.items.powerups.respawn"), Sound.Source.NEUTRAL, 0.5f, 1f), mPlayer);

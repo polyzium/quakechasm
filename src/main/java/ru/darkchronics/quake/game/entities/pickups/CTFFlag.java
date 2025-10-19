@@ -20,7 +20,7 @@
 package ru.darkchronics.quake.game.entities.pickups;
 
 import net.kyori.adventure.text.Component;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
@@ -121,7 +121,7 @@ public class CTFFlag implements DisplayPickup {
         if (!this.display.getItemStack().isEmpty() || this.isDrop) return;
 
         display.setItemStack(displayItem(this.team));
-        display.getWorld().spawnParticle(Particle.SPELL_INSTANT, display.getLocation(), 16, 0.5, 0.5, 0.5);
+        display.getWorld().spawnParticle(Particle.INSTANT_EFFECT, display.getLocation(), 16, 0.5, 0.5, 0.5);
         display.getWorld().playSound(display, "quake.items.respawn", 0.5f, 1f);
     }
 

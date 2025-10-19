@@ -60,7 +60,7 @@ public abstract class ParticleUtil {
             double z = startLocation.getZ() + ratio * (endLocation.getZ() - startLocation.getZ());
 
             Location particleLocation = new Location(world, x, y, z);
-            world.spawnParticle(Particle.REDSTONE, particleLocation, 1, 0, 0, 0, 0, redstoneOptions, true);
+            world.spawnParticle(Particle.DUST, particleLocation, 1, 0, 0, 0, 0, redstoneOptions, true);
         }
     }
 }

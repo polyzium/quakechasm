@@ -19,7 +19,7 @@
 
 package ru.darkchronics.quake.matchmaking.matches;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import ru.darkchronics.quake.QuakePlugin;
 import ru.darkchronics.quake.matchmaking.factory.MatchFactory;
 import ru.darkchronics.quake.matchmaking.map.QMap;

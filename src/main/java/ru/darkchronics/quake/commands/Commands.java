@@ -112,7 +112,7 @@ public abstract class Commands {
                                     World world = trigger.getLocation().getWorld();
                                     Location loc = vector.toLocation(world);
                                     if (prevLoc == null)
-                                        world.spawnParticle(Particle.REDSTONE, loc, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x0000FF), 3));
+                                        world.spawnParticle(Particle.DUST, loc, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x0000FF), 3));
                                     else
                                         ParticleUtil.drawRedstoneLine(prevLoc, loc, new Particle.DustOptions(Color.fromRGB(0x0000FF), 4));
                                     prevLoc = loc;
@@ -135,7 +135,7 @@ public abstract class Commands {
                                 World world = player.getLocation().getWorld();
                                 Location loc = vector.toLocation(world);
                                 if (prevLoc == null)
-                                    world.spawnParticle(Particle.REDSTONE, loc, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x0000FF), 3));
+                                    world.spawnParticle(Particle.DUST, loc, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x0000FF), 3));
                                 else
                                     ParticleUtil.drawRedstoneLine(prevLoc, loc, new Particle.DustOptions(Color.fromRGB(0x0000FF), 4));
                                 prevLoc = loc;
@@ -511,7 +511,7 @@ public abstract class Commands {
                             QuakePlugin.INSTANCE.maps.add(qMap);
 
                             for (Spawnpoint spawnPoint : spawnPoints) {
-                                world.spawnParticle(Particle.SPELL_INSTANT, spawnPoint.pos, 64, 0.5, 0.5, 0.5);
+                                world.spawnParticle(Particle.INSTANT_EFFECT, spawnPoint.pos, 64, 0.5, 0.5, 0.5);
                                 world.setBlockData(spawnPoint.pos, Material.AIR.createBlockData());
                             }
 
@@ -531,7 +531,7 @@ public abstract class Commands {
                             // Place spawnpoints
                             for (Spawnpoint spawnPoint : map.spawnPoints) {
                                 QuakePlugin.placeSpawnpoint(spawnPoint);
-                                map.world.spawnParticle(Particle.REDSTONE, spawnPoint.pos, 64, 0.5, 0.5, 0.5, new Particle.DustOptions(Color.fromRGB(0xFF0000), 2));
+                                map.world.spawnParticle(Particle.DUST, spawnPoint.pos, 64, 0.5, 0.5, 0.5, new Particle.DustOptions(Color.fromRGB(0xFF0000), 2));
                             }
 
                             // Do removal
@@ -541,6 +541,10 @@ public abstract class Commands {
                 )
                 .withSubcommand(new CommandAPICommand("list")
                         .executes((sender, args) -> {
+                            if (QuakePlugin.INSTANCE.maps.isEmpty()) {
+                                sender.sendMessage("§cNo maps to list");
+                                return;
+                            }
                             for (QMap map : QuakePlugin.INSTANCE.maps) {
                                 sender.sendMessage(map.name+" in "+map.world.getName()+" at "+ map.bounds.getMin());
                             }
@@ -792,7 +796,7 @@ public abstract class Commands {
 
         CommandAPICommand partyCmd = new CommandAPICommand("party")
                 .withSubcommand(new CommandAPICommand("invite")
-                        .withArguments(new PlayerArgument("player"))
+                        .withArguments(new PlayerProfileArgument("player"))
                         .executesPlayer((player, args) -> {
                             Player invitee = (Player) args.get("player");
                             assert invitee != null;
@@ -858,7 +862,7 @@ public abstract class Commands {
                         })
                 )
                 .withSubcommand(new CommandAPICommand("kick")
-                        .withArguments(new PlayerArgument("player"))
+                        .withArguments(new PlayerProfileArgument("player"))
                         .executesPlayer((player, args) -> {
                             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
                             if (userState.mmState.currentParty.leader != player) {

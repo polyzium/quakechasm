@@ -60,17 +60,17 @@ public abstract class ProjectileUtil {
 
     public static void explodeRocket(Location loc, Entity attacker, Entity impactEntity) {
         loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.7f);
-        loc.getWorld().spawnParticle(Particle.EXPLOSION_NORMAL, loc, 16, 0,0,0, 0.25);
-        loc.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, loc, 1, 0,0,0, 0.25, null, true);
+        loc.getWorld().spawnParticle(Particle.POOF, loc, 16, 0,0,0, 0.25);
+        loc.getWorld().spawnParticle(Particle.EXPLOSION, loc, 1, 0,0,0, 0.25, null, true);
         explodeCustom(loc, attacker, impactEntity, 5, 20, 10, 0.8, DamageCause.ROCKET, DamageCause.ROCKET_SPLASH);
     }
 
     public static void explodeBFG(Location loc, Entity attacker) {
         explodeCustom(loc, attacker, null, 10, 40, 40, 2, DamageCause.BFG, DamageCause.BFG_SPLASH);
         loc.getWorld().playSound(loc, "quake.weapons.bfg.explode", 2, 1);
-        loc.getWorld().spawnParticle(Particle.EXPLOSION_NORMAL, loc, 16, 0,0,0, 0.3);
-        loc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, loc, 1, 0, 0, 0, 0.0, null, true);
-        loc.getWorld().spawnParticle(Particle.REDSTONE, loc, 64, 1, 1, 1, 1, new Particle.DustOptions(Color.fromRGB(0x00FF00), 2));
+//        loc.getWorld().spawnParticle(Particle.EXPLOSION, loc, 16, 0,0,0, 0.3);
+        loc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, loc, 1, 0, 0, 0, 0.0, null, true);
+        loc.getWorld().spawnParticle(Particle.DUST, loc, 64, 1, 1, 1, 1, new Particle.DustOptions(Color.fromRGB(0x00FF00), 2));
     }
 
     public static void impactPlasma(ProjectileHitEvent event) {
@@ -84,7 +84,7 @@ public abstract class ProjectileUtil {
             Location loc = event.getEntity().getLocation();
 //            loc.getWorld().playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 0.5f, 2);
             loc.getWorld().playSound(loc, "quake.weapons.impact_energy", 0.5f, 1);
-            loc.getWorld().spawnParticle(Particle.SMOKE_NORMAL, loc, 16, 0,0,0, 0.1);
+            loc.getWorld().spawnParticle(Particle.SMOKE, loc, 16, 0,0,0, 0.1);
         }
     }
 
