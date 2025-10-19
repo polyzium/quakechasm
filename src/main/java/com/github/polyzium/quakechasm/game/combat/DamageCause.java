@@ -27,6 +27,7 @@ public enum DamageCause {
     ROCKET_SPLASH,
     LIGHTNING,
     PLASMA,
+    PLASMA_SPLASH,
     RAILGUN,
     BFG,
     BFG_SPLASH,

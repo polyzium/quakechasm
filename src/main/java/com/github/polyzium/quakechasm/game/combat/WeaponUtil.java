@@ -305,8 +305,12 @@ public abstract class WeaponUtil {
 //        player.getWorld().playSound(player, Sound.ENTITY_ARROW_SHOOT, 0.5f, 1f);
         player.getWorld().playSound(player, "quake.weapons.plasma.fire", 0.5f, 1f);
 
-        Location loc = player.getLocation();
-        loc.setY(loc.y() + player.getHeight()-0.35);
+        RayTraceResult raycast = cast(player, 0, 2);
+        if (raycast != null) {
+            Location hitLoc = raycast.getHitPosition().toLocation(player.getWorld());
+            explodePlasma(hitLoc, player, null, true);
+            return;
+        }
 
         Snowball projectile = player.launchProjectile(Snowball.class);
         setProjectileType(projectile, "plasma");
