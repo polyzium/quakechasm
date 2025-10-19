@@ -76,16 +76,24 @@ public abstract class ProjectileUtil {
     public static void impactPlasma(ProjectileHitEvent event) {
         ProjectileSource attacker = event.getEntity().getShooter();
         Entity hitEntity = event.getHitEntity();
-        if (hitEntity instanceof LivingEntity hitLivingEntity && attacker instanceof Entity attackerEntity) {
-//            hitLivingEntity.setNoDamageTicks(0);
-//            hitLivingEntity.damage(4, attackerEntity);
-            damageCustom(hitLivingEntity, 4, attackerEntity, DamageCause.PLASMA);
-        } else if (event.getHitBlock() != null) {
-            Location loc = event.getEntity().getLocation();
-//            loc.getWorld().playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 0.5f, 2);
-            loc.getWorld().playSound(loc, "quake.weapons.impact_energy", 0.5f, 1);
-            loc.getWorld().spawnParticle(Particle.SMOKE, loc, 16, 0,0,0, 0.1);
+        if (attacker instanceof LivingEntity attackerEntity) {
+            if (hitEntity instanceof LivingEntity hitLivingEntity) {
+                hitLivingEntity.setNoDamageTicks(0);
+                damageCustom(hitLivingEntity, 6, attackerEntity, DamageCause.PLASMA);
+                event.getEntity().remove();
+            }
+
+            Location impactLoc = event.getEntity().getLocation();
+            explodePlasma(impactLoc, (Entity) attacker, hitEntity, event.getHitBlock() != null);
         }
+    }
+
+    public static void explodePlasma(Location loc, Entity attacker, Entity impactEntity, boolean hitBlock) {
+        if (hitBlock) {
+            loc.getWorld().playSound(loc, "quake.weapons.impact_energy", 0.5f, 1);
+            loc.getWorld().spawnParticle(Particle.SMOKE, loc, 16, 0, 0, 0, 0.1);
+        }
+        explodeCustom(loc, attacker, impactEntity, 2, 6, 6, 0.4, DamageCause.PLASMA, DamageCause.PLASMA_SPLASH);
     }
 
     public static void impactBFG(ProjectileHitEvent event) {
