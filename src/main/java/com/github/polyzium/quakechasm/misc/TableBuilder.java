@@ -35,42 +35,37 @@ public class TableBuilder {
     }
 
     private int[] calculateColumnWidths() {
-        int columnCount = rows.get(0).length;
+        // Find the maximum number of columns across all rows
+        int columnCount = 0;
+        for (String[] row : rows) {
+            columnCount = Math.max(columnCount, row.length);
+        }
+        
         int[] widths = new int[columnCount];
         for (String[] row : rows) {
-            for (int i = 0; i < columnCount; i++) {
+            for (int i = 0; i < row.length; i++) {
                 widths[i] = Math.max(widths[i], row[i].length());
             }
         }
         return widths;
     }
 
-    private String generateSeparatorRow() {
-        StringBuilder separator = new StringBuilder();
-        separator.append("+");
-        for (int width : columnWidths) {
-            separator.append("-".repeat(Math.max(0, width + 2)));
-            separator.append("+");
-        }
-        return separator.toString();
-    }
-
     public String build() {
         StringBuilder table = new StringBuilder();
         columnWidths = calculateColumnWidths();
-        String separatorRow = generateSeparatorRow();
-
-        table.append(separatorRow).append("\n");
-        for (String[] row : rows) {
-            table.append("|");
+        for (int r = 0; r < rows.size(); r++) {
+            String[] row = rows.get(r);
             for (int i = 0; i < row.length; i++) {
-                table.append(" ").append(row[i]);
+                table.append(row[i]);
                 int spacesToAdd = columnWidths[i] - row[i].length();
                 table.append(" ".repeat(Math.max(0, spacesToAdd)));
-                table.append(" |");
+                if (i < row.length-1)
+                table.append(" ");
             }
-            table.append("\n");
-            table.append(separatorRow).append("\n");
+
+            if (r < rows.size() - 1) {
+                table.append("\n");
+            }
         }
         return table.toString();
     }

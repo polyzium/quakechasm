@@ -19,6 +19,8 @@
 
 package com.github.polyzium.quakechasm.matchmaking.matches;
 
+import com.github.polyzium.quakechasm.misc.TableBuilder;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.title.Title;
@@ -84,6 +86,7 @@ public class FFAMatch extends Match {
         super.leave(player);
         scores.remove(player);
         this.updateScoreboard();
+        player.sendPlayerListHeaderAndFooter(Component.empty(), Component.empty());
 
         if (players.isEmpty()) {
             QuakePlugin.INSTANCE.getLogger().warning("Last player of match "+this.getName()+", "+map.name+" has left. Ending match.");
@@ -154,20 +157,31 @@ public class FFAMatch extends Match {
     }
 
     private Component getScoreboard() {
+        TableBuilder tableBuilder = new TableBuilder();
+
         Component scoreboard = Component.empty();
 
         List<Map.Entry<Player, Integer>> sortedScores = new ArrayList<>(scores.entrySet());
         sortedScores.sort(Map.Entry.comparingByValue(Comparator.reverseOrder()));
 
+        tableBuilder.addRow("Score", "Ping", "Name");
+        tableBuilder.addRow("", "", "");
+
         for (Map.Entry<Player, Integer> scoreEntry : sortedScores) {
-            scoreboard = scoreboard.append(Component.text(scoreEntry.getKey().getName()+": "+scoreEntry.getValue())).appendNewline();
+            tableBuilder.addRow(scoreEntry.getValue().toString(), String.valueOf(scoreEntry.getKey().getPing()), scoreEntry.getKey().getName());
         }
+
+        scoreboard = scoreboard.append(Component.text(tableBuilder.build()).font(Key.key("mono")));
 
         return scoreboard;
     }
 
     private void updateScoreboard() {
-        this.sendPlayerListHeader(this.getScoreboard().appendNewline());
+        for (Player player : players.keySet()) {
+            Component place = getPlaceComponent(player);
+            place = place.append(Component.text(TranslationManager.t("MATCH_SCORE_PLACE", player)+scores.get(player)).color(TextColor.color(0xFFFFFF))).appendNewline();
+            player.sendPlayerListHeaderAndFooter(place, this.getScoreboard());
+        }
     }
 
     public Pair<Integer, Boolean> getPlace(Player player) {
@@ -186,6 +200,38 @@ public class FFAMatch extends Match {
         return new Pair<>(place, isTied);
     }
 
+    public Component getPlaceComponent(Player player) {
+        Pair<Integer, Boolean> place = getPlace(player);
+        String formattedPlace = String.valueOf(place.getLeft());
+        TextColor placeColor;
+        switch (place.getLeft()) {
+            case 1:
+                formattedPlace += TranslationManager.t("FIRST_SUFFIX", player);
+                placeColor = TextColor.color(0x0000FF);
+                break;
+            case 2:
+                formattedPlace += TranslationManager.t("SECOND_SUFFIX", player);
+                placeColor = TextColor.color(0xFF0000);
+                break;
+            case 3:
+                formattedPlace += TranslationManager.t("THIRD_SUFFIX", player);
+                placeColor = TextColor.color(0xFFFF00);
+                break;
+            default:
+                formattedPlace += TranslationManager.t("NTH_SUFFIX", player);
+                placeColor = TextColor.color(0xFFFFFF);
+                break;
+        }
+
+        Component placeComponent;
+        if (place.getRight()) // tied
+            placeComponent = Component.text(TranslationManager.t("MATCH_SCORE_TIEDFOR", player)).color(TextColor.color(0xFFFFFF)).append(Component.text(formattedPlace).color(placeColor));
+        else
+            placeComponent = Component.text(formattedPlace).color(placeColor);
+
+        return placeComponent;
+    }
+
     @Override
     public void onDeath(Player victim, Entity attacker, DamageCause cause) {
         for (Player viewer : this.players.keySet()) {
@@ -201,38 +247,7 @@ public class FFAMatch extends Match {
             }
             scores.put(pAttacker, oldScore+1);
 
-            // TODO remove
-            Player polyzium = Bukkit.getPlayer("Polyzium2");
-            if (polyzium != null)
-                polyzium.sendMessage(pAttacker.getName()+"'s score is "+scores.get(pAttacker));
-
-            Pair<Integer, Boolean> place = getPlace(pAttacker);
-            String formattedPlace = String.valueOf(place.getLeft());
-            TextColor placeColor;
-            switch (place.getLeft()) {
-                case 1:
-                    formattedPlace += TranslationManager.t("FIRST_SUFFIX", pAttacker);
-                    placeColor = TextColor.color(0x0000FF);
-                    break;
-                case 2:
-                    formattedPlace += TranslationManager.t("SECOND_SUFFIX", pAttacker);
-                    placeColor = TextColor.color(0xFF0000);
-                    break;
-                case 3:
-                    formattedPlace += TranslationManager.t("THIRD_SUFFIX", pAttacker);
-                    placeColor = TextColor.color(0xFFFF00);
-                    break;
-                default:
-                    formattedPlace += TranslationManager.t("NTH_SUFFIX", pAttacker);
-                    placeColor = TextColor.color(0xFFFFFF);
-                    break;
-            }
-
-            Component placeComponent;
-            if (place.getRight()) // tied
-                placeComponent = Component.text(TranslationManager.t("MATCH_SCORE_TIEDFOR", pAttacker)).color(TextColor.color(0xFFFFFF)).append(Component.text(formattedPlace).color(placeColor));
-            else
-                placeComponent = Component.text(formattedPlace).color(placeColor);
+            Component placeComponent = getPlaceComponent(pAttacker);
 
             pAttacker.showTitle(Title.title(
                     Component.text(TranslationManager.t("GAME_KILL_BEGIN", pAttacker)+victim.getName()),
