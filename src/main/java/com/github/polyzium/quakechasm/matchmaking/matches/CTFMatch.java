@@ -19,10 +19,12 @@
 
 package com.github.polyzium.quakechasm.matchmaking.matches;
 
+import com.github.polyzium.quakechasm.misc.TableBuilder;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -66,11 +68,11 @@ public class CTFMatch extends Match {
         this.updateInfo();
     }
 
-    public static String getNameStatic() {
-        return "MATCH_CTF_NAME";
+    public static String getNameKeyStatic() {
+        return "match.ctf.name";
     }
-    public String getName() {
-        return getNameStatic();
+    public String getNameKey() {
+        return getNameKeyStatic();
     }
 
     @Override
@@ -112,7 +114,7 @@ public class CTFMatch extends Match {
         this.updateScoreboard();
 
         if (players.isEmpty()) {
-            QuakePlugin.INSTANCE.getLogger().warning("Last player of match "+this.getName()+", "+map.name+" has left. Ending match.");
+            QuakePlugin.INSTANCE.getLogger().warning("Last player of match "+this.getNameKey()+", "+map.name+" has left. Ending match.");
             this.end();
         }
     }
@@ -135,8 +137,8 @@ public class CTFMatch extends Match {
             public void run() {
                 for (Player player : players) {
                     player.showTitle(Title.title(
-                            Component.text(TranslationManager.t(getName(), player)),
-                            Component.text(TranslationManager.t("MATCH_COUNTDOWN", player) + count),
+                            TranslationManager.t(getNameKey(), player),
+                            TranslationManager.t("match.countdown", player, Placeholder.unparsed("count", String.valueOf(count))),
                             Title.Times.times(Duration.ZERO, Duration.ofMillis(1200), Duration.ZERO)
                     ));
                 }
@@ -170,8 +172,8 @@ public class CTFMatch extends Match {
         this.updateScoreboard();
         for (Player player : this.players.keySet()) {
             player.showTitle(Title.title(
-                    Component.text(TranslationManager.t("MATCH_START", player)),
-                    Component.text(TranslationManager.t("MATCH_CTF_STARTMSG_1", player)+ capturelimit +TranslationManager.t("MATCH_CTF_STARTMSG_2", player)).color(TextColor.color(0xff0000)),
+                    TranslationManager.t("match.start", player),
+                    TranslationManager.t("match.ctf.startMessage", player, Placeholder.unparsed("capturelimit", String.valueOf(capturelimit))).color(TextColor.color(0xff0000)),
                     Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofMillis(500))
             ));
         }
@@ -234,9 +236,9 @@ public class CTFMatch extends Match {
         for (Player matchPlayer : this.players.keySet()) {
             matchPlayer.sendMessage(
                     player.displayName()
-                            .append(Component.text(TranslationManager.t("MATCH_CTF_FLAG_TAKEN", matchPlayer)))
+                            .append(TranslationManager.t("match.ctf.flag.taken", matchPlayer))
                             .append(Component.text(belongingFlagTeam.name()).color(TextColor.color(Team.Colors.get(belongingFlagTeam))))
-                            .append(Component.text(TranslationManager.t("MATCH_CTF_FLAG_ENDING_GENERIC", matchPlayer)))
+                            .append(TranslationManager.t("match.ctf.flag.endingGeneric", matchPlayer))
             );
         }
 
@@ -260,15 +262,15 @@ public class CTFMatch extends Match {
                     if (returningPlayer != null)
                         player.sendMessage(
                                 returningPlayer.displayName()
-                                        .append(Component.text(TranslationManager.t("MATCH_CTF_FLAG_RETURNED_BYPLAYER", player)))
+                                        .append(TranslationManager.t("match.ctf.flag.returnedByPlayer", player))
                                         .append(Component.text(team.name()).color(TextColor.color(Team.Colors.get(team))))
-                                        .append(Component.text(TranslationManager.t("MATCH_CTF_FLAG_ENDING_GENERIC", player)))
+                                        .append(TranslationManager.t("match.ctf.flag.endingGeneric", player))
                         );
                     else
                         player.sendMessage(
-                                Component.text(TranslationManager.t("MATCH_CTF_FLAG_RETURNED_1", player))
+                                TranslationManager.t("match.ctf.flag.returnedAuto", player)
                                         .append(Component.text(team.name()).color(TextColor.color(Team.Colors.get(team))))
-                                        .append(Component.text(TranslationManager.t("MATCH_CTF_FLAG_RETURNED_2", player)))
+                                        .append(TranslationManager.t("match.ctf.flag.endingGeneric", player))
                         );
                 }
 
@@ -322,9 +324,9 @@ public class CTFMatch extends Match {
         for (Player player : this.players.keySet()) {
             player.sendMessage(
                     capturer.displayName()
-                            .append(Component.text(TranslationManager.t("MATCH_CTF_CAPTURE", player)))
+                            .append(TranslationManager.t("match.ctf.capture", player))
                             .append(Component.text(capturerTeam.oppositeTeam().name()).color(TextColor.color(Team.Colors.get(capturerTeam.oppositeTeam()))))
-                            .append(Component.text(TranslationManager.t("MATCH_CTF_FLAG_ENDING_GENERIC", player)))
+                            .append(TranslationManager.t("match.ctf.flag.endingGeneric", player))
             );
         }
 
@@ -339,13 +341,13 @@ public class CTFMatch extends Match {
             for (Player player : this.players.keySet()) {
 
                 player.showTitle(Title.title(
-                        Component.text(TranslationManager.t("MATCH_TEAM_WINS_BEGIN", player))
+                        TranslationManager.t("match.team.winsBegin", player)
                                 .append(winningTeam)
-                                .append(Component.text(TranslationManager.t("MATCH_GENERIC_WINS", player))),
+                                .append(TranslationManager.t("match.team.winsEnd", player)),
                         Component.empty(),
                         Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofMillis(500))
                 ));
-                player.sendMessage(TranslationManager.t("MATCH_AFTERMATH_SCOREBOARD_BEGIN", player));
+                player.sendMessage(TranslationManager.t("match.aftermath.scoreboardBegin", player));
                 player.sendMessage(this.getScoreboard());
             }
             this.end();
@@ -353,34 +355,50 @@ public class CTFMatch extends Match {
     }
 
     private Component getScoreboard() {
-        Component scoreboard = Component.empty();
-
         List<Map.Entry<Player, Integer>> sortedScores = new ArrayList<>(scores.entrySet());
         sortedScores.sort(Map.Entry.comparingByValue(Comparator.reverseOrder()));
 
-        // Red team
-        scoreboard = scoreboard.append(Component.text("Red team: " + captures[0]).color(TextColor.color(Team.Colors.get(Team.RED)))).appendNewline();
+        // Build Red team table
+        TableBuilder redTableBuilder = new TableBuilder();
+        redTableBuilder.addRow("Score", "Ping", "Name");
+        redTableBuilder.addRow("", "", "");
+
         for (Map.Entry<Player, Integer> scoreEntry : sortedScores) {
             if (players.get(scoreEntry.getKey()) != Team.RED) continue;
-            scoreboard = scoreboard.append(
-                    Component.text(scoreEntry.getKey().getName()+": "+scoreEntry.getValue())
-                            .color(TextColor.color(0xffffff))
-            ).appendNewline();
+            redTableBuilder.addRow(
+                scoreEntry.getValue().toString(),
+                String.valueOf(scoreEntry.getKey().getPing()),
+                scoreEntry.getKey().getName()
+            );
         }
 
-        scoreboard = scoreboard.appendNewline();
+        // Build Blue team table
+        TableBuilder blueTableBuilder = new TableBuilder();
+        blueTableBuilder.addRow("Score", "Ping", "Name");
+        blueTableBuilder.addRow("", "", "");
 
-        // Blue team
-        scoreboard = scoreboard.append(Component.text("Blue team: " + captures[1]).color(TextColor.color(Team.Colors.get(Team.BLUE)))).appendNewline();
-        for (Map.Entry<Player, Integer> killEntry : sortedScores) {
-            if (players.get(killEntry.getKey()) != Team.BLUE) continue;
-            scoreboard = scoreboard.append(
-                    Component.text(killEntry.getKey().getName()+": "+killEntry.getValue())
-                            .color(TextColor.color(0xffffff))
-            ).appendNewline();
+        for (Map.Entry<Player, Integer> scoreEntry : sortedScores) {
+            if (players.get(scoreEntry.getKey()) != Team.BLUE) continue;
+            blueTableBuilder.addRow(
+                scoreEntry.getValue().toString(),
+                String.valueOf(scoreEntry.getKey().getPing()),
+                scoreEntry.getKey().getName()
+            );
         }
 
-        return scoreboard;
+        Component redTable = Component.text(redTableBuilder.build())
+            .font(Key.key("mono"))
+            .color(TextColor.color(Team.Colors.get(Team.RED)));
+
+        Component blueTable = Component.text(blueTableBuilder.build())
+            .font(Key.key("mono"))
+            .color(TextColor.color(Team.Colors.get(Team.BLUE)));
+
+        return Component.empty()
+            .append(redTable)
+            .appendNewline()
+            .appendNewline()
+            .append(blueTable);
     }
 
     private void updateInfo() {
@@ -408,11 +426,29 @@ public class CTFMatch extends Match {
         this.infoBar.name(Component.empty().append(redStatus).append(Component.text(" ")).append(blueStatus).font(Key.key("hud_bossbar")));
     }
 
+    private Component getHeaderComponent() {
+        Component header;
+        if (captures[1] > captures[0]) {
+            // Blue leads
+            header = Component.text("Blue leads " + captures[1] + " to " + captures[0])
+                .color(TextColor.color(Team.Colors.get(Team.BLUE)));
+        } else if (captures[0] > captures[1]) {
+            // Red leads
+            header = Component.text("Red leads " + captures[0] + " to " + captures[1])
+                .color(TextColor.color(Team.Colors.get(Team.RED)));
+        } else {
+            // Teams are tied
+            header = Component.text("Teams are tied")
+                .color(TextColor.color(0xFFFF00));
+        }
+        return header.appendNewline();
+    }
+
     private void updateScoreboard() {
-        this.sendPlayerListHeader(
-                Component.text("\n\n\n\n\n")
-                .append(this.getScoreboard())
-        );
+        for (Player player : players.keySet()) {
+            Component header = getHeaderComponent();
+            player.sendPlayerListHeaderAndFooter(header, this.getScoreboard());
+        }
     }
 
     @Override
@@ -435,7 +471,7 @@ public class CTFMatch extends Match {
                 scores.put(pAttacker, oldScores - 1);
 
             pAttacker.showTitle(Title.title(
-                    Component.text(TranslationManager.t("GAME_KILL_BEGIN", pAttacker)+victim.getName()),
+                    TranslationManager.t("game.kill.message", pAttacker, Placeholder.unparsed("victim", victim.getName())),
                     Component.empty(),
                     Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofMillis(500))
             ));

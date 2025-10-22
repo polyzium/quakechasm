@@ -124,7 +124,7 @@ public class PowerupSpawner extends Spawner {
         } else
             player.getWorld().playSound(player, Powerup.SOUNDS.get(type), 0.5f, 1f);
 
-        Hud.pickupMessage(player, Component.text(TranslationManager.t(Powerup.NAMES.get(type), player)));
+        Hud.pickupMessage(player, TranslationManager.t(Powerup.NAMES.get(type), player));
 
         if (!this.isDrop)
             // Respawn in 1 minute

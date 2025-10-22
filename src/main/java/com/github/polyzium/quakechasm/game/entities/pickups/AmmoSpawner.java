@@ -46,13 +46,13 @@ public class AmmoSpawner extends Spawner {
             1 // bfg charge
     };
     public static final String[] NAMES = {
-            "PICKUP_AMMO_BULLETS",
-            "PICKUP_AMMO_SHELLS",
-            "PICKUP_AMMO_ROCKETS",
-            "PICKUP_AMMO_BATTERY",
-            "PICKUP_AMMO_SLUGS",
-            "PICKUP_AMMO_CELLS",
-            "PICKUP_AMMO_BFG",
+            "pickup.ammo.bullets",
+            "pickup.ammo.shells",
+            "pickup.ammo.rockets",
+            "pickup.ammo.battery",
+            "pickup.ammo.slugs",
+            "pickup.ammo.cells",
+            "pickup.ammo.bfg",
     };
     public static final String[] ALIASES = {
             "bullets",
@@ -107,7 +107,7 @@ public class AmmoSpawner extends Spawner {
 
         this.display.setItemStack(new ItemStack(Material.AIR)); // Make invisible
         player.getWorld().playSound(player, "quake.items.ammo.pickup", 0.5f, 1f);
-        Hud.pickupMessage(player, Component.text(TranslationManager.t(NAMES[ammoType], player)));
+        Hud.pickupMessage(player, TranslationManager.t(NAMES[ammoType], player));
 
         // Respawn in 40 seconds
         this.respawnTask = new BukkitRunnable() {

@@ -19,6 +19,7 @@
 
 package com.github.polyzium.quakechasm.commands;
 
+import com.github.polyzium.quakechasm.game.combat.DamageCause;
 import com.github.polyzium.quakechasm.game.entities.pickups.*;
 import com.github.polyzium.quakechasm.matchmaking.factory.*;
 import com.github.polyzium.quakechasm.misc.Chatroom;
@@ -39,6 +40,7 @@ import joptsimple.internal.Strings;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -50,7 +52,6 @@ import com.github.polyzium.quakechasm.game.combat.WeaponUtil;
 import com.github.polyzium.quakechasm.game.combat.powerup.PowerupType;
 import com.github.polyzium.quakechasm.game.entities.QEntityUtil;
 import com.github.polyzium.quakechasm.game.entities.Trigger;
-import com.github.polyzium.quakechasm.game.entities.pickups.*;
 import com.github.polyzium.quakechasm.game.entities.triggers.Jumppad;
 import com.github.polyzium.quakechasm.game.entities.triggers.Portal;
 import com.github.polyzium.quakechasm.matchmaking.matches.MatchMode;
@@ -58,16 +59,15 @@ import com.github.polyzium.quakechasm.matchmaking.MatchmakingManager;
 import com.github.polyzium.quakechasm.matchmaking.matches.Match;
 import com.github.polyzium.quakechasm.matchmaking.matches.MatchManager;
 import com.github.polyzium.quakechasm.matchmaking.Team;
-import com.github.polyzium.quakechasm.matchmaking.factory.*;
 import com.github.polyzium.quakechasm.matchmaking.map.QMap;
 import com.github.polyzium.quakechasm.matchmaking.map.Spawnpoint;
 import com.github.polyzium.quakechasm.menus.MenuGenerators;
 import com.github.polyzium.quakechasm.menus.MenuManager;
-import com.github.polyzium.quakechasm.misc.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 public abstract class Commands {
@@ -98,7 +98,7 @@ public abstract class Commands {
                                             QEntityUtil.getEntityType(entity).equals("jumppad")
                             );
                             if (nearestJumppad == null) {
-                                player.sendMessage(TranslationManager.t("ERROR_ENTITY_JUMPPAD_NONEARBY", player));
+                                player.sendMessage(TranslationManager.t("error.entity.jumppad.noNearby", player));
                                 return;
                             }
 
@@ -186,7 +186,7 @@ public abstract class Commands {
                             QuakeUserState state = QuakePlugin.INSTANCE.userStates.get(player);
                             if (state.portalLoc == null) {
                                 state.portalLoc = player.getLocation();
-                                player.sendMessage(TranslationManager.t("COMMAND_ENTITY_PORTAL_CREATE_INITIATED", player));
+                                player.sendMessage(TranslationManager.t("command.entity.portal.createInitiated", player));
                                 return;
                             }
 
@@ -203,11 +203,11 @@ public abstract class Commands {
                         .executesPlayer((player, args) -> {
                             QuakeUserState state = QuakePlugin.INSTANCE.userStates.get(player);
                             if (state.portalLoc == null) {
-                                player.sendMessage(TranslationManager.t("COMMAND_GENERIC_CANCELED_ALREADY", player));
+                                player.sendMessage(TranslationManager.t("command.generic.cancelledAlready", player));
                                 return;
                             }
                             state.portalLoc = null;
-                            player.sendMessage(TranslationManager.t("COMMAND_ENTITY_PORTAL_CREATE_CANCELED", player));
+                            player.sendMessage(TranslationManager.t("command.entity.portal.createCanceled", player));
                         })
                 );
 
@@ -239,7 +239,7 @@ public abstract class Commands {
                                     health = 20;
                                     break;
                                 default:
-                                    player.sendMessage(TranslationManager.t("ERROR_HEALTHSPAWNER_WRONGTYPE", player));
+                                    player.sendMessage(TranslationManager.t("error.healthSpawner.wrongType", player));
                                     return;
                             }
                             new HealthSpawner(
@@ -304,7 +304,7 @@ public abstract class Commands {
                                     armor = 100;
                                     break;
                                 default:
-                                    player.sendMessage(TranslationManager.t("ERROR_ARMORSPAWNER_WRONGTYPE", player));
+                                    player.sendMessage(TranslationManager.t("error.armorSpawner.wrongType", player));
                                     return;
                             }
                             new ArmorSpawner(
@@ -336,7 +336,8 @@ public abstract class Commands {
                             try {
                                 type = PowerupType.valueOf(((String) args.get("type")).toUpperCase());
                             } catch (IllegalArgumentException e) {
-                                player.sendMessage("§cWrong powerup type, use either of: "+ Strings.join(MiscUtil.getEnumNamesLowercase(PowerupType.class), ", "));
+                                player.sendMessage(TranslationManager.t("error.powerupSpawner.wrongType", player,
+                                    Placeholder.unparsed("types", Strings.join(MiscUtil.getEnumNamesLowercase(PowerupType.class), ", "))));
                                 return;
                             }
 
@@ -363,7 +364,7 @@ public abstract class Commands {
                             try {
                                 team = Team.valueOf(((String) args.get("team")).toUpperCase());
                             } catch (IllegalArgumentException e) {
-                                player.sendMessage(TranslationManager.t("ERROR_CTFFLAG_WRONGTEAM", player));
+                                player.sendMessage(TranslationManager.t("error.ctfFlag.wrongTeam", player));
                                 return;
                             }
 
@@ -419,9 +420,9 @@ public abstract class Commands {
                     QuakePlugin.INSTANCE.onDisable();
                     QuakePlugin.INSTANCE.onEnable();
                     if (player != null)
-                        sender.sendMessage(TranslationManager.t("PLUGIN_RELOAD", player));
+                        sender.sendMessage(TranslationManager.t("plugin.reload", player));
                     else
-                        sender.sendMessage(TranslationManager.t("PLUGIN_RELOAD", TranslationManager.FALLBACK));
+                        sender.sendMessage(TranslationManager.t("plugin.reload", TranslationManager.FALLBACK));
 
                     Bukkit.getServer().broadcast(
                             Component.text("[Quakechasm]").color(TextColor.color(0x8e60e0)).append(
@@ -450,7 +451,8 @@ public abstract class Commands {
                             PowerupSpawner.doPowerup(player, PowerupType.REGENERATION, 30);
                             break;
                         default:
-                            player.sendMessage(TranslationManager.t("ERROR_GIVE_INVALIDOPTION", player)+giveWhat+"!");
+                            player.sendMessage(TranslationManager.t("error.give.invalidOption", player,
+                                Placeholder.unparsed("option", giveWhat)));
                             break;
                     }
                 });
@@ -469,7 +471,7 @@ public abstract class Commands {
                             try {
                                 WorldEditPlugin worldEditPlugin = (WorldEditPlugin) Bukkit.getPluginManager().getPlugin("WorldEdit");
                                 if (worldEditPlugin == null) {
-                                    player.sendMessage(TranslationManager.t("ERROR_WORLDEDIT", player));
+                                    player.sendMessage(TranslationManager.t("error.worldEdit", player));
                                     return;
                                 }
                                 Region selection = worldEditPlugin.getSession(player).getSelection(BukkitAdapter.adapt(world));
@@ -480,7 +482,7 @@ public abstract class Commands {
 
                                 bukkitSelection = BoundingBox.of(bukkitPos1, bukkitPos2);
                             } catch (IncompleteRegionException e) {
-                                player.sendMessage(TranslationManager.t("ERROR_MAP_REGIONNOTSELECTED", player));
+                                player.sendMessage(TranslationManager.t("error.map.regionNotSelected", player));
                                 return;
                             }
 
@@ -497,7 +499,7 @@ public abstract class Commands {
                                 QuakePlugin.INSTANCE.maps = new ArrayList<>(8);
 
                             if (QuakePlugin.INSTANCE.getMap(name) != null) {
-                                player.sendMessage(TranslationManager.t("ERROR_DUPLICATEMAP", player));
+                                player.sendMessage(TranslationManager.t("error.duplicateMap", player));
                                 return;
                             }
 
@@ -515,7 +517,8 @@ public abstract class Commands {
                                 world.setBlockData(spawnPoint.pos, Material.AIR.createBlockData());
                             }
 
-                            player.sendMessage(TranslationManager.t("COMMAND_MAP_CREATED_1", player)+displayName+TranslationManager.t("COMMAND_MAP_CREATED_2", player));
+                            player.sendMessage(TranslationManager.t("command.map.created", player,
+                                Placeholder.unparsed("map_name", displayName)));
                         })
                 )
                 .withSubcommand(new CommandAPICommand("remove")
@@ -525,7 +528,7 @@ public abstract class Commands {
                             String name = (String) args.get("mapName");
                             QMap map = QuakePlugin.INSTANCE.getMap(name);
                             if (map == null) {
-                                player.sendMessage(TranslationManager.t("ERROR_NOSUCHMAP", player));
+                                player.sendMessage(TranslationManager.t("error.noSuchMap", player));
                                 return;
                             }
                             // Place spawnpoints
@@ -536,7 +539,8 @@ public abstract class Commands {
 
                             // Do removal
                             QuakePlugin.INSTANCE.maps.remove(map);
-                            player.sendMessage(TranslationManager.t("COMMAND_MAP_REMOVED_1", player)+name+TranslationManager.t("COMMAND_MAP_REMOVED_2", player));
+                            player.sendMessage(TranslationManager.t("command.map.removed", player,
+                                Placeholder.unparsed("map_name", name)));
                         })
                 )
                 .withSubcommand(new CommandAPICommand("list")
@@ -555,14 +559,14 @@ public abstract class Commands {
                         .executesPlayer((player, args) -> {
                             WorldEditPlugin worldEditPlugin = (WorldEditPlugin) Bukkit.getPluginManager().getPlugin("WorldEdit");
                             if (worldEditPlugin == null) {
-                                player.sendMessage(TranslationManager.t("ERROR_WORLDEDIT", player));
+                                player.sendMessage(TranslationManager.t("error.worldEdit", player));
                                 return;
                             }
 
                             String name = (String) args.get("mapName");
                             QMap map = QuakePlugin.INSTANCE.getMap(name);
                             if (map == null) {
-                                player.sendMessage(TranslationManager.t("ERROR_NOSUCHMAP", player));
+                                player.sendMessage(TranslationManager.t("error.noSuchMap", player));
                                 return;
                             }
 //                            try {
@@ -597,7 +601,7 @@ public abstract class Commands {
                                         map.bounds.getMax().getBlockZ()
                                 ));
 
-                                player.sendMessage(TranslationManager.t("COMMAND_MAP_SELECT_RESULT", player));
+                                player.sendMessage(TranslationManager.t("command.map.selectResult", player));
 //                            } catch (IncompleteRegionException e) {
 //                                throw new RuntimeException(e);
 //                            }
@@ -623,13 +627,14 @@ public abstract class Commands {
 
                             QMap map = QuakePlugin.INSTANCE.getMap(mapName);
                             if (map == null) {
-                                sender.sendMessage(TranslationManager.t("ERROR_NOSUCHMAP", player));
+                                sender.sendMessage(TranslationManager.t("error.noSuchMap", player));
                                 return;
                             }
 
                             for (Match match : QuakePlugin.INSTANCE.matchManager.matches) {
                                 if (match.getMap().name.equals(mapName)) {
-                                    sender.sendMessage("§cThere is already a match in progress on "+mapName+TranslationManager.t("ERROR_MATCH_MAPOCCUPIED_2", player));
+                                    sender.sendMessage(TranslationManager.t("error.match.mapOccupied", player,
+                                        Placeholder.unparsed("map_name", mapName)));
                                     return;
                                 }
                             }
@@ -643,9 +648,11 @@ public abstract class Commands {
                             };
                             if (matchFactory == null) {
                                 if (player != null)
-                                    sender.sendMessage(TranslationManager.t("ERROR_INVALIDMODE", player)+mode);
+                                    sender.sendMessage(TranslationManager.t("error.invalidMode", player,
+                                        Placeholder.unparsed("mode", mode)));
                                 else
-                                    sender.sendMessage(TranslationManager.t("ERROR_INVALIDMODE", TranslationManager.FALLBACK)+mode);
+                                    sender.sendMessage(TranslationManager.t("error.invalidMode", TranslationManager.FALLBACK,
+                                        Placeholder.unparsed("mode", mode)));
 
                                 return;
                             }
@@ -653,11 +660,17 @@ public abstract class Commands {
                             MatchManager matchManager = QuakePlugin.INSTANCE.matchManager;
                             Match match = matchManager.newMatch(matchFactory, map);
                             if (match == null) {
-                                sender.sendMessage(TranslationManager.t("ERROR_GENERIC", player));
+                                sender.sendMessage(TranslationManager.t("error.generic", player));
                                 return;
                             }
                             match.setNeedPlayers(needPlayers);
-                            sender.sendMessage("Made a new "+matchFactory.getName()+" match with index "+ matchManager.matches.indexOf(match));
+                            Locale locale;
+                            if (player == null)
+                                locale = TranslationManager.FALLBACK;
+                            else
+                                locale =  player.locale();
+
+                            sender.sendMessage("Made a new "+TranslationManager.tLegacy(matchFactory.getNameKey(), locale)+" match with index "+ matchManager.matches.indexOf(match));
                         })
                 )
                 .withSubcommand(new CommandAPICommand("join")
@@ -666,13 +679,13 @@ public abstract class Commands {
                             MatchManager matchManager = QuakePlugin.INSTANCE.matchManager;
                             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
                             if (userState.currentMatch != null) {
-                                player.sendMessage(TranslationManager.t("ERROR_MATCH_ALREADY", player));
+                                player.sendMessage(TranslationManager.t("error.match.already", player));
                                 return;
                             }
 
                             int index = (int) args.get("index");
                             if (index >= matchManager.matches.size() || index < 0) {
-                                player.sendMessage(TranslationManager.t("ERROR_NOSUCHMATCH", player));
+                                player.sendMessage(TranslationManager.t("error.noSuchMatch", player));
                                 return;
                             }
 
@@ -683,7 +696,7 @@ public abstract class Commands {
                         .executesPlayer((player, args) -> {
                             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
                             if (userState.currentMatch == null) {
-                                player.sendMessage(TranslationManager.t("ERROR_MATCH_NOTINAMATCH", player));
+                                player.sendMessage(TranslationManager.t("error.match.notInMatch", player));
                                 return;
                             }
                             userState.currentMatch.leave(player);
@@ -694,9 +707,9 @@ public abstract class Commands {
                             MatchManager matchManager = QuakePlugin.INSTANCE.matchManager;
                             if (matchManager.matches.isEmpty()) {
                                 if (sender instanceof Player player)
-                                    sender.sendMessage(TranslationManager.t("ERROR_NOMATCHES", player));
+                                    sender.sendMessage(TranslationManager.t("error.noMatches", player));
                                 else
-                                    sender.sendMessage(TranslationManager.t("ERROR_NOMATCHES", TranslationManager.FALLBACK));
+                                    sender.sendMessage(TranslationManager.t("error.noMatches", TranslationManager.FALLBACK));
 
                                 return;
                             }
@@ -704,7 +717,7 @@ public abstract class Commands {
                             for (int i = 0; i < matchManager.matches.size(); i++) {
                                 Match match = matchManager.matches.get(i);
 
-                                sender.sendMessage(String.format("%d: %s on %s, %d players", i, match.getName(), match.getMap().name, match.getPlayers().size()));
+                                sender.sendMessage(String.format("%d: %s on %s, %d players", i, match.getNameKey(), match.getMap().name, match.getPlayers().size()));
                             }
 
                         })
@@ -722,17 +735,17 @@ public abstract class Commands {
                         .executesPlayer((player, args) -> {
                             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
                             if (userState.mmState.currentParty.leader != player) {
-                                player.sendMessage(TranslationManager.t("ERROR_PARTY_COMMAND_LEADERONLY", player));
+                                player.sendMessage(TranslationManager.t("error.party.command.leaderOnly", player));
                                 return;
                             }
 
                             if (MatchmakingManager.INSTANCE.findPendingParty(player) != null) {
-                                player.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_ALREADYSEARCHING", player));
+                                player.sendMessage(TranslationManager.t("error.matchmaking.alreadySearching", player));
                                 return;
                             }
 
                             if (userState.currentMatch != null) {
-                                player.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_SEARCH_INAMATCH", player));
+                                player.sendMessage(TranslationManager.t("error.matchmaking.search.inMatch", player));
                                 return;
                             }
 
@@ -752,7 +765,7 @@ public abstract class Commands {
                             List<QMap> maps = (List<QMap>) args.get("maps");
                             assert maps != null;
                             if (maps.size() > 1) {
-                                player.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_ONLYONEMAP", player));
+                                player.sendMessage(TranslationManager.t("error.matchmaking.onlyOneMap", player));
                                 return;
                             }
                             List<String> stringedMaps = maps.stream().map(qMap -> qMap.name).collect(Collectors.toList());
@@ -763,23 +776,23 @@ public abstract class Commands {
                         .executesPlayer((player, args) -> {
                             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
                             if (userState.mmState.currentParty.leader != player) {
-                                player.sendMessage(TranslationManager.t("ERROR_PARTY_COMMAND_LEADERONLY", player));
+                                player.sendMessage(TranslationManager.t("error.party.command.leaderOnly", player));
                                 return;
                             }
 
                             if (userState.mmState.currentPendingMatch != null) {
-                                player.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_NOTACCEPTED", player));
+                                player.sendMessage(TranslationManager.t("error.matchmaking.notAccepted", player));
                                 return;
                             } else if (userState.mmState.acceptedPendingMatch != null) {
-                                player.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_NOCANCEL", player));
+                                player.sendMessage(TranslationManager.t("error.matchmaking.noCancel", player));
                                 return;
                             }
 
                             boolean wasSearching = MatchmakingManager.INSTANCE.stopSearching(player);
                             if (wasSearching)
-                                player.sendMessage(TranslationManager.t("MATCHMAKING_SEARCH_CANCELED", player));
+                                player.sendMessage(TranslationManager.t("matchmaking.search.canceled", player));
                             else
-                                player.sendMessage(TranslationManager.t("COMMAND_GENERIC_CANCELLED_ALREADY", player));
+                                player.sendMessage(TranslationManager.t("command.generic.cancelledAlready", player));
                         })
                 )
                 .withSubcommand(new CommandAPICommand("accept")
@@ -788,7 +801,7 @@ public abstract class Commands {
                             if (userState.mmState.currentPendingMatch != null) {
                                 userState.mmState.currentPendingMatch.accept(player);
                             } else {
-                                player.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_NOPENDINGMATCH", player));
+                                player.sendMessage(TranslationManager.t("error.matchmaking.noPendingMatch", player));
                                 return;
                             }
                         })
@@ -802,22 +815,25 @@ public abstract class Commands {
                             assert invitee != null;
 
                             if (player == invitee) {
-                                player.sendMessage(TranslationManager.t("ERROR_PARTY_UNABLESELFINVITE", player));
+                                player.sendMessage(TranslationManager.t("error.party.unableSelfInvite", player));
                                 return;
                             }
 
                             QuakeUserState inviteeState = QuakePlugin.INSTANCE.userStates.get(invitee);
                             QuakeUserState inviterState = QuakePlugin.INSTANCE.userStates.get(player);
                             if (inviterState.mmState.currentParty.getPlayers().contains(invitee)) {
-                                player.sendMessage(TranslationManager.t("ERROR_PARTY_ALREADYTHERE", player));
+                                player.sendMessage(TranslationManager.t("error.party.alreadyThere", player));
                                 return;
                             }
                             inviteeState.mmState.invitationParty = inviterState.mmState.currentParty;
 
-                            invitee.sendMessage(player.getName()+TranslationManager.t("PARTY_INVITEDBY_1", player)+
-                                    TranslationManager.t("PARTY_INVITEDBY_2", player));
+                            invitee.sendMessage(TranslationManager.t("party.invitedBy", player,
+                                Placeholder.unparsed("inviter_name", player.getName())));
                             inviterState.mmState.currentParty.sendMessage(Component.textOfChildren(
-                                    MatchmakingManager.Party.localizedPrefix(inviterState.mmState.currentParty.leader.locale()), Component.text(player.getName()+TranslationManager.t("PARTY_INVITED", inviterState.mmState.currentParty.leader)+invitee.getName())
+                                    MatchmakingManager.Party.localizedPrefix(inviterState.mmState.currentParty.leader.locale()),
+                                    TranslationManager.t("party.invited", inviterState.mmState.currentParty.leader,
+                                        Placeholder.unparsed("inviter_name", player.getName()),
+                                        Placeholder.unparsed("invitee_name", invitee.getName()))
                             ));
 
                             new BukkitRunnable() {
@@ -825,8 +841,9 @@ public abstract class Commands {
                                 public void run() {
                                     if (inviteeState.mmState.invitationParty == null) return;
 
-                                    invitee.sendMessage(TranslationManager.t("ERROR_PARTY_INVITEEXPIRED", player));
-                                    player.sendMessage("§c"+invitee.getName()+TranslationManager.t("ERROR_PARTY_INVITE_DIDNTACCEPT", player));
+                                    invitee.sendMessage(TranslationManager.t("error.party.inviteExpired", player));
+                                    player.sendMessage(TranslationManager.t("error.party.invite.didntAccept", player,
+                                        Placeholder.unparsed("player_name", invitee.getName())));
 
                                     inviteeState.mmState.invitationParty = null;
                                 }
@@ -838,7 +855,7 @@ public abstract class Commands {
                             QuakeUserState inviteeState = QuakePlugin.INSTANCE.userStates.get(player);
 
                             if (inviteeState.mmState.invitationParty == null) {
-                                player.sendMessage(TranslationManager.t("ERROR_PARTY_NOINVITE", player));
+                                player.sendMessage(TranslationManager.t("error.party.noInvite", player));
                                 return;
                             }
 
@@ -850,13 +867,13 @@ public abstract class Commands {
                 )
                 .withSubcommand(new CommandAPICommand("list")
                         .executesPlayer((player, args) -> {
-                            player.sendMessage("All players in your party:");
+                            player.sendMessage(TranslationManager.t("command.party.list.begin", player));
                             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
                             for (Player partyPlayer : userState.mmState.currentParty.getPlayers()) {
                                 boolean isLeader = partyPlayer == userState.mmState.currentParty.leader;
                                 player.sendMessage(Component.textOfChildren(
                                         partyPlayer.displayName(),
-                                        isLeader?Component.text(TranslationManager.t("COMMAND_PARTY_LIST_LEADER", player)):Component.empty()
+                                        isLeader?TranslationManager.t("command.party.list.leader", player):Component.empty()
                                 ));
                             }
                         })
@@ -866,7 +883,7 @@ public abstract class Commands {
                         .executesPlayer((player, args) -> {
                             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
                             if (userState.mmState.currentParty.leader != player) {
-                                player.sendMessage(TranslationManager.t("ERROR_PARTY_COMMAND_LEADERONLY", player));
+                                player.sendMessage(TranslationManager.t("error.party.command.leaderOnly", player));
                                 return;
                             }
 
@@ -874,20 +891,25 @@ public abstract class Commands {
                             assert annoyingPlayer != null;
 
                             if (player == annoyingPlayer) {
-                                player.sendMessage(TranslationManager.t("ERROR_PARTY_UNABLESELFKICK", player));
+                                player.sendMessage(TranslationManager.t("error.party.unableSelfKick", player));
                                 return;
                             }
 
                             if (!userState.mmState.currentParty.getPlayers().contains(annoyingPlayer)) {
-                                player.sendMessage("§c"+annoyingPlayer.getName()+TranslationManager.t("ERROR_PARTY_ABSENT", player));
+                                player.sendMessage(TranslationManager.t("error.party.absent", player,
+                                    Placeholder.unparsed("player_name", annoyingPlayer.getName())));
                                 return;
                             }
                             userState.mmState.currentParty.removePlayer(annoyingPlayer);
 
                             userState.mmState.currentParty.sendMessage(Component.textOfChildren(
-                                    MatchmakingManager.Party.localizedPrefix(userState.mmState.currentParty.leader.locale()), player.displayName(), Component.text(TranslationManager.t("PARTY_LEADER_KICKED", userState.mmState.currentParty.leader)), annoyingPlayer.displayName()
+                                    MatchmakingManager.Party.localizedPrefix(userState.mmState.currentParty.leader.locale()),
+                                    TranslationManager.t("party.leader.kicked", userState.mmState.currentParty.leader,
+                                        Placeholder.component("leader_name", player.displayName()),
+                                        Placeholder.component("player_name", annoyingPlayer.displayName()))
                             ));
-                            annoyingPlayer.sendMessage(TranslationManager.t("ERROR_PARTY_KICKED_1", annoyingPlayer)+player.getName()+TranslationManager.t("ERROR_PARTY_KICKED_2", annoyingPlayer));
+                            annoyingPlayer.sendMessage(TranslationManager.t("error.party.kicked", annoyingPlayer,
+                                Placeholder.unparsed("leader_name", player.getName())));
                         })
                 )
                 .withSubcommand(new CommandAPICommand("leave")
@@ -895,14 +917,15 @@ public abstract class Commands {
                             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
                             MatchmakingManager.Party partyToLeave = userState.mmState.currentParty;
                             if (userState.mmState.currentParty.size() == 1) {
-                                player.sendMessage(TranslationManager.t("ERROR_PARTY_SINGLE", player));
+                                player.sendMessage(TranslationManager.t("error.party.single", player));
                                 return;
                             }
 
                             if (userState.mmState.currentParty.leader == player)
-                                player.sendMessage(TranslationManager.t("WARNING_PARTY_LEAVINGWHILELEADER", player));
+                                player.sendMessage(TranslationManager.t("warning.party.leavingWhileLeader", player));
                             userState.mmState.currentParty.removePlayer(player);
-                            player.sendMessage(TranslationManager.t("PARTY_LEFT", player)+partyToLeave.leader.getName()+TranslationManager.t("ERROR_PARTY_KICKED_2", player));
+                            player.sendMessage(TranslationManager.t("party.left", player,
+                                Placeholder.unparsed("leader_name", partyToLeave.leader.getName())));
                         })
                 );
 
@@ -926,7 +949,7 @@ public abstract class Commands {
                     try {
                         chatroom = Chatroom.valueOf(((String) args.get("chatroom")).toUpperCase());
                     } catch (IllegalArgumentException e) {
-                        player.sendMessage(TranslationManager.t("ERROR_CHATROOM_INVALID", player));
+                        player.sendMessage(TranslationManager.t("error.chatroom.invalid", player));
                         player.sendMessage("§c"+e.getMessage());
                         return;
                     }
@@ -954,7 +977,19 @@ public abstract class Commands {
 ////                        player.sendMessage(((ItemDisplay) entity).getItemStack().displayName());
 //                    }
 
-                    player.sendMessage(String.valueOf(QuakePlugin.INSTANCE.userStates.get(player).currentMatch.isTeamMatch()));
+//                    QuakePlugin.INSTANCE.userStates.get(player).currentMatch.onDeath(player, player, DamageCause.UNKNOWN);
+
+                    for (DamageCause damageCause : DamageCause.values()) {
+                        player.sendMessage("§bSelf: "+damageCause.name());
+                        QuakePlugin.INSTANCE.userStates.get(player).currentMatch.onDeath(player, player, damageCause);
+                    }
+
+                    Entity attacker = player.getWorld().spawnEntity(player.getLocation(), EntityType.PIG);
+                    for (DamageCause damageCause : DamageCause.values()) {
+                        player.sendMessage("§bAttacker: "+damageCause.name());
+                        QuakePlugin.INSTANCE.userStates.get(player).currentMatch.onDeath(player, attacker, damageCause);
+                    }
+                    attacker.remove();
                 });
 
         CommandAPICommand menuCmd = new CommandAPICommand("menu")

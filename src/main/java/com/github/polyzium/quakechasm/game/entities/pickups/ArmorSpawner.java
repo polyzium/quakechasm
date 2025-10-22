@@ -40,9 +40,9 @@ import java.util.Map;
 public class ArmorSpawner extends Spawner {
     public static final Map<Integer, String> NAMES = new HashMap<>();
     static {
-        NAMES.put(5, "PICKUP_ARMOR_SHARD");
-        NAMES.put(50, "PICKUP_ARMOR_LIGHT");
-        NAMES.put(100, "PICKUP_ARMOR_HEAVY");
+        NAMES.put(5, "pickup.armor.shard");
+        NAMES.put(50, "pickup.armor.light");
+        NAMES.put(100, "pickup.armor.heavy");
     }
     private ItemStack itemForRespawn;
     private BukkitTask respawnTask;
@@ -107,7 +107,7 @@ public class ArmorSpawner extends Spawner {
         } else {
             player.getWorld().playSound(player, "quake.items.armor.pickup", 0.5f, 1f);
         }
-        Hud.pickupMessage(player, Component.text(TranslationManager.t(NAMES.get(this.armor), player)));
+        Hud.pickupMessage(player, TranslationManager.t(NAMES.get(this.armor), player));
 
         // Respawn in 25 seconds
         this.respawnTask = new BukkitRunnable() {

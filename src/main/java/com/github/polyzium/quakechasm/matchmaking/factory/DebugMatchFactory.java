@@ -30,7 +30,7 @@ public class DebugMatchFactory implements MatchFactory {
     }
 
     @Override
-    public String getName() {
+    public String getNameKey() {
         return DebugMatch.getNameStatic();
     }
 }

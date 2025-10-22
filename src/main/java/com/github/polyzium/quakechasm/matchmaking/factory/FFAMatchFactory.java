@@ -30,7 +30,7 @@ public class FFAMatchFactory implements MatchFactory {
     }
 
     @Override
-    public String getName() {
-        return FFAMatch.getNameStatic();
+    public String getNameKey() {
+        return FFAMatch.getNameKeyStatic();
     }
 }

@@ -103,7 +103,7 @@ public class WeaponUserState {
                                 WeaponUtil.fireBFG(player);
                                 break;
                             default:
-                                player.sendMessage(TranslationManager.t("ERROR_WEAPON_UNKNOWN", player));
+                                player.sendMessage(TranslationManager.t("error.weapon.unknown", player));
                                 cancel();
                                 return;
                         }

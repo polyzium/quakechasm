@@ -48,7 +48,7 @@ public class MatchManager {
             );
         }
         if (match == null) {
-            QuakePlugin.INSTANCE.getLogger().severe("Failed to make a "+matchFactory.getName()+" match");
+            QuakePlugin.INSTANCE.getLogger().severe("Failed to make a "+matchFactory.getNameKey()+" match");
             return null;
         }
 

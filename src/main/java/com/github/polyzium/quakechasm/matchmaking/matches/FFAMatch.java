@@ -23,8 +23,8 @@ import com.github.polyzium.quakechasm.misc.TableBuilder;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.title.Title;
-import org.bukkit.Bukkit;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -51,11 +51,11 @@ public class FFAMatch extends Match {
         super(map);
     }
 
-    public static String getNameStatic() {
-        return "MATCH_FFA_NAME";
+    public static String getNameKeyStatic() {
+        return "match.ffa.name";
     }
-    public String getName() {
-        return getNameStatic();
+    public String getNameKey() {
+        return getNameKeyStatic();
     }
 
     @Override
@@ -89,7 +89,7 @@ public class FFAMatch extends Match {
         player.sendPlayerListHeaderAndFooter(Component.empty(), Component.empty());
 
         if (players.isEmpty()) {
-            QuakePlugin.INSTANCE.getLogger().warning("Last player of match "+this.getName()+", "+map.name+" has left. Ending match.");
+            QuakePlugin.INSTANCE.getLogger().warning("Last player of match "+this.getNameKey()+", "+map.name+" has left. Ending match.");
             this.end();
         }
     }
@@ -107,8 +107,8 @@ public class FFAMatch extends Match {
             public void run() {
                 for (Player player : players) {
                     player.showTitle(Title.title(
-                            Component.text(TranslationManager.t(getName(), player)),
-                            Component.text(TranslationManager.t("MATCH_COUNTDOWN", player) + count),
+                            TranslationManager.t(getNameKey(), player),
+                            TranslationManager.t("match.countdown", player, Placeholder.unparsed("count", String.valueOf(count))),
                             Title.Times.times(Duration.ZERO, Duration.ofMillis(1200), Duration.ZERO)
                     ));
                 }
@@ -139,8 +139,8 @@ public class FFAMatch extends Match {
         this.updateScoreboard();
         for (Player player : this.players.keySet()) {
             player.showTitle(Title.title(
-                    Component.text(TranslationManager.t("MATCH_START", player)),
-                    Component.text(TranslationManager.t("MATCH_GENERIC_STARTMSG_1", player)+fraglimit+TranslationManager.t("MATCH_GENERIC_STARTMSG_2", player)).color(TextColor.color(0xff0000)),
+                    TranslationManager.t("match.start", player),
+                    TranslationManager.t("match.generic.startMessage", player, Placeholder.unparsed("fraglimit", String.valueOf(fraglimit))).color(TextColor.color(0xff0000)),
                     Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofMillis(500))
             ));
         }
@@ -179,7 +179,7 @@ public class FFAMatch extends Match {
     private void updateScoreboard() {
         for (Player player : players.keySet()) {
             Component place = getPlaceComponent(player);
-            place = place.append(Component.text(TranslationManager.t("MATCH_SCORE_PLACE", player)+scores.get(player)).color(TextColor.color(0xFFFFFF))).appendNewline();
+            place = place.append(TranslationManager.t("match.score.place", player, Placeholder.unparsed("score", String.valueOf(scores.get(player)))).color(TextColor.color(0xFFFFFF))).appendNewline();
             player.sendPlayerListHeaderAndFooter(place, this.getScoreboard());
         }
     }
@@ -206,26 +206,26 @@ public class FFAMatch extends Match {
         TextColor placeColor;
         switch (place.getLeft()) {
             case 1:
-                formattedPlace += TranslationManager.t("FIRST_SUFFIX", player);
+                formattedPlace += TranslationManager.tLegacy("suffix.first", player);
                 placeColor = TextColor.color(0x0000FF);
                 break;
             case 2:
-                formattedPlace += TranslationManager.t("SECOND_SUFFIX", player);
+                formattedPlace += TranslationManager.tLegacy("suffix.second", player);
                 placeColor = TextColor.color(0xFF0000);
                 break;
             case 3:
-                formattedPlace += TranslationManager.t("THIRD_SUFFIX", player);
+                formattedPlace += TranslationManager.tLegacy("suffix.third", player);
                 placeColor = TextColor.color(0xFFFF00);
                 break;
             default:
-                formattedPlace += TranslationManager.t("NTH_SUFFIX", player);
+                formattedPlace += TranslationManager.tLegacy("suffix.nth", player);
                 placeColor = TextColor.color(0xFFFFFF);
                 break;
         }
 
         Component placeComponent;
         if (place.getRight()) // tied
-            placeComponent = Component.text(TranslationManager.t("MATCH_SCORE_TIEDFOR", player)).color(TextColor.color(0xFFFFFF)).append(Component.text(formattedPlace).color(placeColor));
+            placeComponent = TranslationManager.t("match.score.tiedFor", player).color(TextColor.color(0xFFFFFF)).append(Component.text(formattedPlace).color(placeColor));
         else
             placeComponent = Component.text(formattedPlace).color(placeColor);
 
@@ -250,8 +250,8 @@ public class FFAMatch extends Match {
             Component placeComponent = getPlaceComponent(pAttacker);
 
             pAttacker.showTitle(Title.title(
-                    Component.text(TranslationManager.t("GAME_KILL_BEGIN", pAttacker)+victim.getName()),
-                    placeComponent.append(Component.text(TranslationManager.t("MATCH_SCORE_PLACE", pAttacker)+scores.get(pAttacker)).color(TextColor.color(0xFFFFFF))),
+                    TranslationManager.t("game.kill.message", pAttacker, Placeholder.unparsed("victim", victim.getName())),
+                    placeComponent.append(TranslationManager.t("match.score.place", pAttacker, Placeholder.unparsed("score", String.valueOf(scores.get(pAttacker)))).color(TextColor.color(0xFFFFFF))),
                     Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofMillis(500))
             ));
         } else if (attacker == null || victim == attacker) {
@@ -273,11 +273,11 @@ public class FFAMatch extends Match {
         if (winningScore == fraglimit) {
             for (Player player : this.players.keySet()) {
                 player.showTitle(Title.title(
-                        Component.text(winningPlayer.getName() + TranslationManager.t("MATCH_GENERIC_WINS", player)),
+                        TranslationManager.t("match.generic.wins", player, Placeholder.unparsed("winner", winningPlayer.getName())),
                         Component.empty(),
                         Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofMillis(500))
                 ));
-                player.sendMessage(TranslationManager.t("MATCH_AFTERMATH_SCOREBOARD_BEGIN", player));
+                player.sendMessage(TranslationManager.t("match.aftermath.scoreboardBegin", player));
                 player.sendMessage(this.getScoreboard());
             }
             this.end();

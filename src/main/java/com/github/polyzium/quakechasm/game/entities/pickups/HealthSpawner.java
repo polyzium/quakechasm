@@ -20,6 +20,7 @@
 package com.github.polyzium.quakechasm.game.entities.pickups;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.ItemDisplay;
@@ -107,9 +108,10 @@ public class HealthSpawner extends Spawner {
         this.display.setItemStack(new ItemStack(Material.AIR)); // Make invisible
         player.getWorld().playSound(player, "quake.items.health.pickup_"+this.health, 0.5f, 1f);
         if (this.health == 20)
-            Hud.pickupMessage(player, Component.text(TranslationManager.t("PICKUP_HEALTH_MEGA", player)));
+            Hud.pickupMessage(player, TranslationManager.t("pickup.health.mega", player));
         else
-            Hud.pickupMessage(player, Component.text(this.health*5).append(Component.text(" Health")));
+            Hud.pickupMessage(player, TranslationManager.t("pickup.health.generic", player,
+                    Placeholder.unparsed("amount", String.valueOf(this.health*5))));
 
         // Respawn in 35 seconds
         this.respawnTask = new BukkitRunnable() {

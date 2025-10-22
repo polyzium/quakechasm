@@ -24,6 +24,7 @@ import net.kyori.adventure.audience.ForwardingAudience;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.title.Title;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -66,7 +67,7 @@ public class MatchmakingManager {
         }
 
         public static Component localizedPrefix(Locale locale) {
-            return Component.text(TranslationManager.t("PARTY_PREFIX", locale)).decorate(TextDecoration.BOLD);
+            return TranslationManager.t("party.prefix", locale).decorate(TextDecoration.BOLD);
         }
 
         public void addPlayer(Player player) {
@@ -124,15 +125,14 @@ public class MatchmakingManager {
             this.selectedMaps = new ArrayList<>(selectedMaps);
             this.matchMode = matchMode;
             this.party = party;
-            this.statusBar = BossBar.bossBar(Component.text(TranslationManager.t("MATCHMAKING_SEARCH_START_STATUSBAR_INIT", party.leader)), 0, BossBar.Color.BLUE, BossBar.Overlay.PROGRESS);
+            this.statusBar = BossBar.bossBar(TranslationManager.t("matchmaking.search.start.statusBarInit", party.leader), 0, BossBar.Color.BLUE, BossBar.Overlay.PROGRESS);
             this.timeTask = new BukkitRunnable() {
                 int s = 0;
                 @Override
                 public void run() {
                     s++;
-                    statusBar.name(Component.text(
-                            TranslationManager.t("MATCHMAKING_SEARCH_START_STATUSBAR", party.leader)+String.format("%02d:%02d", (s % 3600) / 60, (s % 60))
-                    ));
+                    statusBar.name(TranslationManager.t("matchmaking.search.start.statusBar", party.leader,
+                            Placeholder.unparsed("time", String.format("%02d:%02d", (s % 3600) / 60, (s % 60)))));
                     statusBar.progress((float) (s % 60)/60);
                 }
             }.runTaskTimer(QuakePlugin.INSTANCE, 20, 20);
@@ -175,7 +175,7 @@ public class MatchmakingManager {
             QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
             userState.mmState.currentPendingMatch = null;
             userState.mmState.acceptedPendingMatch = this;
-            player.sendMessage(TranslationManager.t("MATCHMAKING_MATCH_ACCEPT_WAITING", player));
+            player.sendMessage(TranslationManager.t("matchmaking.match.accept.waiting", player));
 
             for (Player acceptedPlayer : acceptedPlayers) {
                 acceptedPlayer.showTitle(Title.title(
@@ -196,11 +196,11 @@ public class MatchmakingManager {
                 logger.info("Creating match");
                 Match match = MatchManager.INSTANCE.newMatch(matchFactory, this.map);
                 if (match == null) {
-                    QuakePlugin.INSTANCE.getLogger().severe("Unable to create a "+matchFactory.getName()+" match. Please contact the plugin developers.");
+                    QuakePlugin.INSTANCE.getLogger().severe("Unable to create a "+matchFactory.getNameKey()+" match. Please contact the plugin developers.");
                     for (Player acceptedPlayer : acceptedPlayers) {
-                        acceptedPlayer.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_GENERIC", player));
+                        acceptedPlayer.sendMessage(TranslationManager.t("error.matchmaking.generic", player));
                         INSTANCE.stopSearching(acceptedPlayer);
-                        acceptedPlayer.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_SEARCH_OHSHITITSFUCKED", player));
+                        acceptedPlayer.sendMessage(TranslationManager.t("error.matchmaking.search.ohShitItsFucked", player));
                     }
                     return;
                 }
@@ -247,7 +247,7 @@ public class MatchmakingManager {
                 INSTANCE.findPendingParty(acceptedPlayer)
                         .isAcceptingMatch = false;
 
-                acceptedPlayer.sendMessage(TranslationManager.t("WARNING_MATCHMAKING_CONTINUESEARCH", acceptedPlayer));
+                acceptedPlayer.sendMessage(TranslationManager.t("warning.matchmaking.continueSearch", acceptedPlayer));
             }
 
             canceled = true;
@@ -276,16 +276,20 @@ public class MatchmakingManager {
 
     public void startSearching(List<String> selectedMaps, MatchMode matchMode, Party party) {
         boolean mapsUnfit = false;
+        String unfitMapName = "";
         for (String mapName : selectedMaps) {
             QMap map = QuakePlugin.INSTANCE.getMap(mapName);
             if (!map.recommendedModes.contains(matchMode)) {
                 mapsUnfit = true;
+                unfitMapName = mapName;
                 party.sendMessage("§cMap "+mapName+" is unfit for "+matchMode.getDisplayName());
             }
         }
         if (mapsUnfit) {
             for (Player player : party.players) {
-                player.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_MAP_UNFIT_3", player));
+                player.sendMessage(TranslationManager.t("error.matchmaking.mapUnfit", player,
+                        Placeholder.unparsed("map_name", unfitMapName),
+                        Placeholder.unparsed("mode", matchMode.name())));
             }
             return;
         }
@@ -294,15 +298,10 @@ public class MatchmakingManager {
         int playersPerTeam = map.neededPlayers / 2;
         if (playersPerTeam < party.size()) {
             for (Player player : party.players) {
-                party.sendMessage(
-                        TranslationManager.t("ERROR_PARTY_TOOBIG_1", player)+
-                                party.size()+
-                                TranslationManager.t("ERROR_PARTY_TOOBIG_2", player)+
-                                playersPerTeam+
-                                TranslationManager.t("ERROR_PARTY_TOOBIG_3", player)+
-                                map.displayName+"\". "+
-                                TranslationManager.t("ERROR_PARTY_TOOBIG_4", player)
-                );
+                party.sendMessage(TranslationManager.t("error.party.tooBig", player,
+                        Placeholder.unparsed("party_size", String.valueOf(party.size())),
+                        Placeholder.unparsed("max_players", String.valueOf(playersPerTeam)),
+                        Placeholder.unparsed("map_name", map.displayName)));
             }
             return;
         }
@@ -315,7 +314,7 @@ public class MatchmakingManager {
         for (Player partyPlayer : party.players) {
             if (partyPlayer == party.leader)
 //                partyPlayer.sendMessage("Searching for matches... \nUse \"/quake matchmaking cancel\" to stop searching");
-                partyPlayer.sendMessage(TranslationManager.t("MATCHMAKING_SEARCH_START", partyPlayer));
+                partyPlayer.sendMessage(TranslationManager.t("matchmaking.search.start.message", partyPlayer));
             else
 //                partyPlayer.sendMessage(Component.textOfChildren(Party.localizedPrefix(), party.leader.displayName(),
 //                        Component.text(" started search for matches: mode "+matchMode.toString()+", maps "+String.join(", ", selectedMaps)))
@@ -339,9 +338,9 @@ public class MatchmakingManager {
 
         for (Player partyPlayer : pendingSelf.party.players) {
             if (partyPlayer == pendingSelf.party.leader) continue;
-            partyPlayer.sendMessage(Component.textOfChildren(Party.localizedPrefix(partyPlayer.locale()), pendingSelf.party.leader.displayName(),
-                    Component.text(TranslationManager.t("PARTY_MATCHMAKING_CANCELED", partyPlayer))
-            ));
+            partyPlayer.sendMessage(Component.textOfChildren(Party.localizedPrefix(partyPlayer.locale()),
+                    TranslationManager.t("party.matchmaking.canceled", partyPlayer,
+                            Placeholder.component("player_name", pendingSelf.party.leader.displayName()))));
         }
 
         return this.pendingParties.removeIf(pendingParty -> pendingParty.party.players.contains(player));
@@ -441,7 +440,7 @@ public class MatchmakingManager {
     }
 
     private void onMatchFound(PendingParty pendingParty, PendingMatch pendingMatch) {
-        pendingParty.party.sendMessage(TranslationManager.t("MATCHMAKING_MATCH_ACCEPT_CHAT_1", pendingParty.party.leader));
+        pendingParty.party.sendMessage(TranslationManager.t("matchmaking.match.accept.chat", pendingParty.party.leader));
         pendingParty.party.sendMessage("§b"+pendingMatch.map.displayName+" | "+pendingMatch.matchMode.getDisplayName());
         pendingParty.party.sendMessage("Type \"/quake matchmaking accept\" to accept the match.");
         pendingParty.isAcceptingMatch = true;
@@ -460,8 +459,9 @@ public class MatchmakingManager {
                     if (pendingMatch.acceptedPlayers.contains(partyPlayer)) continue;
 
                     partyPlayer.showTitle(Title.title(
-                            Component.text(TranslationManager.t("MATCHMAKING_MATCH_ACCEPT_1", partyPlayer)),
-                            Component.text(TranslationManager.t("MATCHMAKING_MATCH_ACCEPT_2", partyPlayer) + secs + TranslationManager.t("MATCHMAKING_MATCH_ACCEPT_3", partyPlayer)),
+                            TranslationManager.t("matchmaking.match.accept.title", partyPlayer),
+                            TranslationManager.t("matchmaking.match.accept.subtitle", partyPlayer,
+                                    Placeholder.unparsed("seconds", String.valueOf(secs))),
                             Title.Times.times(Duration.ZERO, Duration.ofMillis(1200), Duration.ZERO)
                     ));
                 }
@@ -470,11 +470,12 @@ public class MatchmakingManager {
                     pendingMatch.cancel();
                     for (Player partyPlayer : pendingParty.party.players) {
                         if (pendingMatch.acceptedPlayers.contains(partyPlayer)) continue;
-                        partyPlayer.sendMessage(TranslationManager.t("ERROR_MATCHMAKING_CANCELEDMATCHNOACCEPT", pendingParty.party.leader));
+                        partyPlayer.sendMessage(TranslationManager.t("error.matchmaking.canceledMatchNoAccept", pendingParty.party.leader));
                     }
                     INSTANCE.stopSearching(pendingParty.party.leader);
                     pendingParty.party.sendMessage(Component.textOfChildren(
-                            Party.localizedPrefix(pendingParty.party.leader.locale()), Component.text(TranslationManager.t("PARTY_MATCHMAKING_SEARCH_LEADERDIDNTACCEPT", pendingParty.party.leader))
+                            Party.localizedPrefix(pendingParty.party.leader.locale()),
+                            TranslationManager.t("party.matchmaking.search.leaderDidntAccept", pendingParty.party.leader)
                     ));
 
                     cancel();

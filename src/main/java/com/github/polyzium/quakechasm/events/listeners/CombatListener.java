@@ -26,6 +26,7 @@ import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
@@ -369,7 +370,8 @@ public class CombatListener implements Listener {
         if (userState.dashCooldown > 0) {
             Hud.pickupMessage(
                     player,
-                    Component.text(TranslationManager.t("GAME_DASH_COOLDOWN", player)+((float) userState.dashCooldown/10)+TranslationManager.t("GAME_DASH_COOLDOWN_SECONDS", player))
+                    TranslationManager.t("game.dash.cooldown", player,
+                            Placeholder.unparsed("seconds", String.valueOf((float) userState.dashCooldown/10)))
                             .color(TextColor.color(0xff0000))
             );
             return;
@@ -405,7 +407,7 @@ public class CombatListener implements Listener {
             return;
 
         Player player = (Player) event.getView().getPlayer();
-        event.getView().getPlayer().sendMessage(TranslationManager.t("ERROR_OFFHAND", player));
+        event.getView().getPlayer().sendMessage(TranslationManager.t("error.offhand", player));
         // TODO find a more reliable fix
         ItemStack cursorItem = event.getCursor().clone();
         event.setCancelled(true);

@@ -24,5 +24,5 @@ import com.github.polyzium.quakechasm.matchmaking.map.QMap;
 
 public interface MatchFactory {
     Match createMatch(QMap map);
-    String getName();
+    String getNameKey();
 }

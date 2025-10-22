@@ -22,6 +22,7 @@ package com.github.polyzium.quakechasm.menus;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -43,7 +44,7 @@ public class MatchmakingMenu extends Menu {
     public Locale locale;
 
     public MatchmakingMenu(Player player) {
-        super(Bukkit.createInventory(null, 27, Component.text(TranslationManager.t("MENU_MATCHMAKING", player))));
+        super(Bukkit.createInventory(null, 27, TranslationManager.t("menu.matchmaking.title", player)));
 
         this.locale = player.locale();
 
@@ -58,7 +59,7 @@ public class MatchmakingMenu extends Menu {
         this.drawMM(player);
 
         ItemStack backOption = new ItemStack(Material.ARROW);
-        MiscUtil.setNameForItemStack(backOption, Component.text(TranslationManager.t("MENU_BACK", player)).decoration(TextDecoration.ITALIC, false));
+        MiscUtil.setNameForItemStack(backOption, TranslationManager.t("menu.back", player).decoration(TextDecoration.ITALIC, false));
         this.setItem(25, backOption, Menu.Handler.fromLMB(player1 -> {
             MenuManager.INSTANCE.showMenu(MenuGenerators.mainMenu(player1.locale()), player1);
         }));
@@ -70,9 +71,9 @@ public class MatchmakingMenu extends Menu {
         ItemStack mmOption;
         if (!isSearching) {
             mmOption = new ItemStack(Material.EMERALD);
-            MiscUtil.setNameForItemStack(mmOption, Component.text(TranslationManager.t("MENU_MATCHMAKING_SEARCH", player)).decoration(TextDecoration.ITALIC, false));
+            MiscUtil.setNameForItemStack(mmOption, TranslationManager.t("menu.matchmaking.search", player).decoration(TextDecoration.ITALIC, false));
             if (this.selectedMaps.isEmpty())
-                mmOption.lore(List.of(Component.text(TranslationManager.t("MENU_DISABLED_NOMAPS", player)).decoration(TextDecoration.ITALIC, false).color(TextColor.color(0xFF5555))));
+                mmOption.lore(List.of(TranslationManager.t("menu.disabled.noMaps", player).decoration(TextDecoration.ITALIC, false).color(TextColor.color(0xFF5555))));
 
             this.setItem(26, mmOption, Menu.Handler.fromLMB(player1 -> {
                 if (this.selectedMaps.isEmpty()) return;
@@ -82,7 +83,7 @@ public class MatchmakingMenu extends Menu {
             }));
         } else {
             mmOption = new ItemStack(Material.BARRIER);
-            MiscUtil.setNameForItemStack(mmOption, Component.text(TranslationManager.t("MENU_MATCHMAKING_CANCELSEARCH", player)).decoration(TextDecoration.ITALIC, false));
+            MiscUtil.setNameForItemStack(mmOption, TranslationManager.t("menu.matchmaking.cancelSearch", player).decoration(TextDecoration.ITALIC, false));
             this.setItem(26, mmOption, Menu.Handler.fromLMB(player1 -> {
                 player1.performCommand("quake matchmaking cancel");
                 this.drawMM(player);
@@ -97,11 +98,11 @@ public class MatchmakingMenu extends Menu {
 
             if (this.selectedMode == mode) {
                 modeOption = new ItemStack(Material.GOLDEN_SWORD);
-                modeOption.lore(List.of(Component.text(TranslationManager.t("MENU_SELECTED", this.locale)).decoration(TextDecoration.ITALIC, false).color(TextColor.color(0xFFFF55))));
+                modeOption.lore(List.of(TranslationManager.t("menu.selected", this.locale).decoration(TextDecoration.ITALIC, false).color(TextColor.color(0xFFFF55))));
             } else
                 modeOption = new ItemStack(Material.IRON_SWORD);
 
-            MiscUtil.setNameForItemStack(modeOption, Component.text(TranslationManager.t(mode.getDisplayName(), this.locale)).decoration(TextDecoration.ITALIC, false));
+            MiscUtil.setNameForItemStack(modeOption, TranslationManager.t(mode.getDisplayName(), this.locale).decoration(TextDecoration.ITALIC, false));
             this.setItem(index, modeOption, Menu.Handler.fromLMB(player -> {
                 boolean isSearching = MatchmakingManager.INSTANCE.findPendingParty(player) != null;
                 if (isSearching) return;
@@ -129,10 +130,11 @@ public class MatchmakingMenu extends Menu {
 
             ItemStack mapOption;
             ArrayList<Component> mapLore = new ArrayList<>(2);
-            mapLore.add(Component.text(map.neededPlayers+TranslationManager.t("MENU_MATCHMAKING_CRITERIA_PLAYERSREQUIREMENT", this.locale)).decoration(TextDecoration.ITALIC, false).color(TextColor.color(0x55FFFF)));
+            mapLore.add(TranslationManager.t("menu.matchmaking.criteria.playersRequirement", this.locale,
+                    Placeholder.unparsed("players", String.valueOf(map.neededPlayers))).decoration(TextDecoration.ITALIC, false).color(TextColor.color(0x55FFFF)));
             if (selectedMaps.contains(map.name)) {
                 mapOption = new ItemStack(Material.GLOW_ITEM_FRAME);
-                mapLore.add(Component.text(TranslationManager.t("MENU_SELECTED", this.locale)).decoration(TextDecoration.ITALIC, false).color(TextColor.color(0xFFFF55)));
+                mapLore.add(TranslationManager.t("menu.selected", this.locale).decoration(TextDecoration.ITALIC, false).color(TextColor.color(0xFFFF55)));
             } else
                 mapOption = new ItemStack(Material.ITEM_FRAME);
 
