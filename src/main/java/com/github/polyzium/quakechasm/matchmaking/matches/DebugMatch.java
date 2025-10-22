@@ -39,7 +39,7 @@ public class DebugMatch extends Match {
     public void join(Player player, Team team) {
         super.join(player, team);
 
-        player.sendMessage(Component.text(TranslationManager.t("MATCH_DEBUG_DISCLAIMER", player)).color(TextColor.color(0xff0000)));
+        player.sendMessage(TranslationManager.t("match.debug.disclaimer", player).color(TextColor.color(0xff0000)));
     }
 
     @Override
@@ -50,7 +50,7 @@ public class DebugMatch extends Match {
     public static String getNameStatic() {
         return "GENERIC_DEBUG";
     }
-    public String getName() {
+    public String getNameKey() {
         return getNameStatic();
     }
 

@@ -42,13 +42,13 @@ public class WeaponSpawner extends Spawner {
     private ItemStack itemForRespawn;
     private BukkitTask respawnTask;
     public final static String[] NAMES = {
-        "PICKUP_WEAPON_MACHINEGUN",
-        "PICKUP_WEAPON_SHOTGUN",
-        "PICKUP_WEAPON_ROCKETLAUNCHER",
-        "PICKUP_WEAPON_LIGHTNINGGUN",
-        "PICKUP_WEAPON_RAILGUN",
-        "PICKUP_WEAPON_PLASMAGUN",
-        "PICKUP_WEAPON_BFG"
+        "pickup.weapon.machinegun",
+        "pickup.weapon.shotgun",
+        "pickup.weapon.rocketLauncher",
+        "pickup.weapon.lightningGun",
+        "pickup.weapon.railgun",
+        "pickup.weapon.plasmaGun",
+        "pickup.weapon.bfg"
     };
 
     public WeaponSpawner(int weaponIndex, World world, Location location) {
@@ -99,7 +99,7 @@ public class WeaponSpawner extends Spawner {
 
         ItemMeta weaponMeta = item.getItemMeta();
         int weaponIndex = weaponMeta.getCustomModelData();
-        weaponMeta.displayName(Component.text(TranslationManager.t(NAMES[weaponIndex], player)));
+        weaponMeta.displayName(TranslationManager.t(NAMES[weaponIndex], player));
         item.setItemMeta(weaponMeta);
 
         this.itemForRespawn = item;

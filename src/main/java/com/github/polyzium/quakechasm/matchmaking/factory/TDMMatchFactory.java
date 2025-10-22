@@ -30,7 +30,7 @@ public class TDMMatchFactory implements MatchFactory {
     }
 
     @Override
-    public String getName() {
-        return TDMMatch.getNameStatic();
+    public String getNameKey() {
+        return TDMMatch.getNameKeyStatic();
     }
 }

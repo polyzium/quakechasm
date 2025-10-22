@@ -34,9 +34,9 @@ import java.util.EnumMap;
 public class Powerup {
     public static EnumMap<PowerupType, String> NAMES = new EnumMap<>(PowerupType.class);
     static {
-        NAMES.put(PowerupType.QUAD_DAMAGE, "PICKUP_POWERUP_QUAD");
-        NAMES.put(PowerupType.REGENERATION, "PICKUP_POWERUP_REGENERATION");
-        NAMES.put(PowerupType.PROTECTION, "PICKUP_POWERUP_PROTECTION");
+        NAMES.put(PowerupType.QUAD_DAMAGE, "pickup.powerup.quad");
+        NAMES.put(PowerupType.REGENERATION, "pickup.powerup.regeneration");
+        NAMES.put(PowerupType.PROTECTION, "pickup.powerup.protection");
     }
 
     public static EnumMap<PowerupType, String> SOUNDS = new EnumMap<>(PowerupType.class);

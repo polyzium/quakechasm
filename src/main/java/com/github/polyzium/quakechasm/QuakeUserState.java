@@ -25,6 +25,7 @@ import com.github.polyzium.quakechasm.game.combat.WeaponUserState;
 import com.github.polyzium.quakechasm.game.combat.WeaponUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
@@ -100,7 +101,7 @@ public class QuakeUserState {
         ItemMeta mgMeta = machinegun.getItemMeta();
         mgMeta.setCustomModelData(WeaponType.MACHINEGUN);
         mgMeta.displayName(
-                Component.text(TranslationManager.t("PICKUP_WEAPON_MACHINEGUN", this.player)).
+                TranslationManager.t("pickup.weapon.machinegun", this.player).
                         decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.byBoolean(false))
         );
         machinegun.setItemMeta(mgMeta);
@@ -135,7 +136,8 @@ public class QuakeUserState {
                 this.currentMatch == null &&
                 (chatroom == Chatroom.MATCH || chatroom == Chatroom.TEAM)
         ) {
-            player.sendMessage(TranslationManager.t("ERROR_CHAT_SWITCH_NOMATCH_1", player)+chatroom.name()+TranslationManager.t("ERROR_CHAT_SWITCH_NOMATCH_2", player));
+            player.sendMessage(TranslationManager.t("error.chat.switchNoMatch", player,
+                    Placeholder.unparsed("chatroom", chatroom.name())));
             return;
         }
 
@@ -144,14 +146,13 @@ public class QuakeUserState {
                         this.currentMatch.allowedTeams().stream().allMatch(team -> team == Team.FREE) &&
                         chatroom == Chatroom.TEAM
         ) {
-            player.sendMessage(TranslationManager.t("ERROR_MATCH_NOTTEAM", player));
+            player.sendMessage(TranslationManager.t("error.match.notTeam", player));
             return;
         }
 
         this.currentChat = chatroom;
-        player.sendMessage(Component.textOfChildren(
-            Component.text(TranslationManager.t("COMMAND_CHAT_SWITCH_1", player)), this.currentChat.getPrefix().decoration(TextDecoration.BOLD, false), Component.text(TranslationManager.t("COMMAND_CHAT_SWITCH_2", player))
-        ));
+        player.sendMessage(TranslationManager.t("command.chat.switch", player,
+                Placeholder.component("chatroom", this.currentChat.getPrefix().decoration(TextDecoration.BOLD, false))));
     }
 
     public void startArmorDecreaser() {

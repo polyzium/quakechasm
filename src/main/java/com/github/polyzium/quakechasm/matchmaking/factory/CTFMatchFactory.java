@@ -30,7 +30,7 @@ public class CTFMatchFactory implements MatchFactory {
     }
 
     @Override
-    public String getName() {
-        return CTFMatch.getNameStatic();
+    public String getNameKey() {
+        return CTFMatch.getNameKeyStatic();
     }
 }

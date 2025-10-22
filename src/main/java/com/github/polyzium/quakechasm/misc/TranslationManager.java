@@ -20,7 +20,12 @@
 package com.github.polyzium.quakechasm.misc;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.entity.Player;
 import com.github.polyzium.quakechasm.QuakePlugin;
 
@@ -28,43 +33,96 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class TranslationManager {
     public static final Locale FALLBACK = Locale.US;
-    public static class Translation extends HashMap<String, String> {}
-    public HashMap<String, Translation> translations;
+    private final HashMap<String, JsonObject> translations;
+    private final MiniMessage miniMessage;
     public static TranslationManager INSTANCE = null;
 
     public TranslationManager() throws IOException {
         String languagesJson = new String(QuakePlugin.INSTANCE.getResource("lang.json").readAllBytes(), StandardCharsets.UTF_8);
-        this.translations = new Gson().fromJson(languagesJson, new TypeToken<HashMap<String, Translation>>(){}.getType());
+        this.translations = new Gson().fromJson(languagesJson, new TypeToken<HashMap<String, JsonObject>>(){}.getType());
+        this.miniMessage = MiniMessage.miniMessage();
         INSTANCE = this;
     }
 
-    public String translate(String key, Locale locale) {
-        String translatedString = translations.get(locale.getLanguage()).get(key);
-        if (translatedString == null) {
-            String translatedStringFallback = translations.get(FALLBACK.getLanguage()).get(key);
-            if (translatedStringFallback == null) {
-                QuakePlugin.INSTANCE.getLogger().severe("TranslationManager could not get translation of "+key);
-                return key;
-            }
-            QuakePlugin.INSTANCE.getLogger().warning("TranslationManager could not get translation of "+key+" for locale "+locale.getLanguage()+", falling back to "+FALLBACK.getLanguage());
-            return translatedStringFallback;
+    private String getTranslationString(String key, Locale locale) {
+        JsonObject localeTranslations = translations.get(locale.getLanguage());
+        if (localeTranslations == null) {
+            localeTranslations = translations.get(FALLBACK.getLanguage());
         }
-        return translatedString;
+
+        String[] keyParts = key.split("\\.");
+        JsonElement current = localeTranslations;
+
+        for (String part : keyParts) {
+            if (current == null || !current.isJsonObject()) {
+                break;
+            }
+            current = current.getAsJsonObject().get(part);
+        }
+
+        if (current != null && current.isJsonPrimitive()) {
+            return current.getAsString();
+        }
+
+        // Fallback to FALLBACK locale
+        if (!locale.getLanguage().equals(FALLBACK.getLanguage())) {
+            JsonObject fallbackTranslations = translations.get(FALLBACK.getLanguage());
+            current = fallbackTranslations;
+
+            for (String part : keyParts) {
+                if (current == null || !current.isJsonObject()) {
+                    break;
+                }
+                current = current.getAsJsonObject().get(part);
+            }
+
+            if (current != null && current.isJsonPrimitive()) {
+                QuakePlugin.INSTANCE.getLogger().warning("TranslationManager could not get translation of " + key + " for locale " + locale.getLanguage() + ", falling back to " + FALLBACK.getLanguage());
+                return current.getAsString();
+            }
+        }
+
+        QuakePlugin.INSTANCE.getLogger().severe("TranslationManager could not get translation of " + key);
+        return key;
     }
 
-    public String translate(String key, Player player) {
-        Locale locale = player.locale();
-        return this.translate(key, locale);
+    public Component translate(String key, Locale locale, TagResolver... placeholders) {
+        String translatedString = getTranslationString(key, locale);
+        if (placeholders.length > 0) {
+            return miniMessage.deserialize(translatedString, placeholders);
+        }
+        return miniMessage.deserialize(translatedString);
     }
 
-    public static String t(String key, Locale locale) {
-        return INSTANCE.translate(key, locale);
+    public Component translate(String key, Player player, TagResolver... placeholders) {
+        return translate(key, player.locale(), placeholders);
     }
 
-    public static String t(String key, Player player) {
-        return INSTANCE.translate(key, player);
+    public String translateLegacy(String key, Locale locale) {
+        return getTranslationString(key, locale);
+    }
+
+    public String translateLegacy(String key, Player player) {
+        return getTranslationString(key, player.locale());
+    }
+
+    public static Component t(String key, Locale locale, TagResolver... placeholders) {
+        return INSTANCE.translate(key, locale, placeholders);
+    }
+
+    public static Component t(String key, Player player, TagResolver... placeholders) {
+        return INSTANCE.translate(key, player, placeholders);
+    }
+
+    public static String tLegacy(String key, Locale locale) {
+        return INSTANCE.translateLegacy(key, locale);
+    }
+
+    public static String tLegacy(String key, Player player) {
+        return INSTANCE.translateLegacy(key, player);
     }
 }

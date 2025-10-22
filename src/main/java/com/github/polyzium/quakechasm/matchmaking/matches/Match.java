@@ -24,6 +24,9 @@ import net.kyori.adventure.audience.ForwardingAudience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -83,7 +86,7 @@ public abstract class Match implements ForwardingAudience {
     public static String getNameStatic() {
         return "MATCH_BASE";
     }
-    public String getName() {
+    public String getNameKey() {
         return getNameStatic();
     }
     public void sendMessage(String message) {
@@ -196,19 +199,19 @@ public abstract class Match implements ForwardingAudience {
     };
     public static Component getDeathMessage(Player victim, Entity attacker, DamageCause cause, Locale locale) {
         // TODO Vault API for prefixes and shit
-        TextComponent component;
+        Component component;
         if (attacker == null || victim == attacker) {
-            String deathMsg = DeathMessages.SINGLE.get(cause);
-            if (deathMsg == null) {
-                deathMsg = cause.name();
+            String deathMsgKey = DeathMessages.SUICIDE.get(cause);
+            if (deathMsgKey == null) {
+                deathMsgKey = "obituary.suicide.unknown";
             }
-            component = Component.text(victim.getName()+" "+deathMsg);
+            component = TranslationManager.t(deathMsgKey, locale, Placeholder.parsed("victim_name", victim.getName()), Placeholder.parsed("death_cause", cause.name()));
         } else {
-            Pair<String, String> deathMsg = DeathMessages.POLAR.get(cause);
-            if (deathMsg == null) {
-                deathMsg = new Pair<>(cause.name(), "");
+            String deathMsgKey = DeathMessages.FRAG.get(cause);
+            if (deathMsgKey == null) {
+                deathMsgKey = "obituary.unknown";
             }
-            component = Component.text(victim.getName()+" "+ TranslationManager.t(deathMsg.getLeft(), locale)+" "+attacker.getName()+TranslationManager.t(deathMsg.getRight(), locale));
+            component = TranslationManager.t(deathMsgKey, locale, Placeholder.parsed("victim_name", victim.getName()), Placeholder.parsed("attacker_name", attacker.getName()), Placeholder.parsed("death_cause", cause.name()));
         }
 
         return component.color(TextColor.color(0xff3f3f));
