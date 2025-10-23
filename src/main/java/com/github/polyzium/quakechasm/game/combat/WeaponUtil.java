@@ -32,6 +32,7 @@ import com.github.polyzium.quakechasm.game.combat.powerup.Powerup;
 import com.github.polyzium.quakechasm.game.combat.powerup.PowerupType;
 import com.github.polyzium.quakechasm.matchmaking.Team;
 
+import java.util.Arrays;
 import java.util.function.BiConsumer;
 
 import static com.github.polyzium.quakechasm.game.combat.ProjectileUtil.*;
@@ -154,37 +155,115 @@ public abstract class WeaponUtil {
         loc.getWorld().playSound(loc, "quake.weapons.impact_energy", 0.5f, 1);
     }
 
-    public static RayTraceResult fireHitscan(Player player, double damage, double spread, double limit, DamageCause cause, BiConsumer<Location, Block> impact) {
-        RayTraceResult ray = cast(player, spread, limit);
-        if (ray == null) {
-            Location eyeLocation = player.getEyeLocation().clone();
-            Vector look = eyeLocation.getDirection().clone().multiply(limit);
-            Vector hitPos = eyeLocation.toVector().clone().add(look);
+    public static RayTraceResult fireHitscan(Player player, double damage, double spread, double limit, DamageCause cause, boolean pierce, BiConsumer<Location, Block> impact) {
+        RayTraceResult initialRay = cast(player, spread, limit);
 
-            return new RayTraceResult(hitPos);
+        if (initialRay == null) {
+            return createMissResult(player, limit);
         }
 
-        Block hitBlock = ray.getHitBlock();
-        Vector hitPos = ray.getHitPosition();
-        Location hitLoc = new Location(player.getWorld(), hitPos.getX(), hitPos.getY(), hitPos.getZ());
+        RayTraceResult finalRay = processHitscanHit(initialRay, player, damage, cause, pierce, limit);
 
-        Location playerLoc = player.getLocation();
-        playerLoc.setY(playerLoc.y() + player.getHeight()-0.1);
+        applyBlockImpact(finalRay, player.getWorld(), impact);
+        
+        return finalRay;
+    }
 
-        Entity entity = ray.getHitEntity();
+    private static RayTraceResult createMissResult(Player player, double limit) {
+        Location eyeLocation = player.getEyeLocation();
+        Vector direction = eyeLocation.getDirection();
+        Vector missPosition = eyeLocation.toVector().add(direction.multiply(limit));
+        return new RayTraceResult(missPosition);
+    }
+
+    private static RayTraceResult processHitscanHit(RayTraceResult initialRay, Player player, double damage, DamageCause cause, boolean pierce, double limit) {
+        RayTraceResult currentRay = initialRay;
+        Entity previousHitEntity = null;
+
+        if (currentRay.getHitEntity() != null) {
+            damageEntity(currentRay.getHitEntity(), damage, player, cause);
+            previousHitEntity = currentRay.getHitEntity();
+        }
+
+        if (pierce) {
+            currentRay = processPiercingShot(currentRay, player, damage, cause, limit, previousHitEntity);
+        }
+        
+        return currentRay;
+    }
+
+    private static RayTraceResult processPiercingShot(RayTraceResult initialRay, Player player, double damage, DamageCause cause, double limit, Entity previousHitEntity) {
+        RayTraceResult currentRay = initialRay;
+        Entity lastHitEntity = previousHitEntity;
+        Location eyeLocation = player.getEyeLocation();
+        Vector originPos = eyeLocation.toVector();
+
+        while (currentRay != null && currentRay.getHitEntity() != null) {
+            Vector currentHitPos = currentRay.getHitPosition();
+            
+            double distanceTraveled = currentHitPos.distance(originPos);
+            double remainingLimit = limit - distanceTraveled;
+
+            if (remainingLimit <= 0) {
+                break;
+            }
+            
+            // Preserve spread by calculating the direction vector
+            Vector direction = currentHitPos.clone().subtract(originPos).normalize();
+
+            Entity entityToExclude = lastHitEntity;
+            RayTraceResult nextRay = player.getWorld().rayTrace(
+                currentHitPos.toLocation(player.getWorld()),
+                direction,
+                remainingLimit,
+                FluidCollisionMode.NEVER,
+                true,
+                0.35,
+                e -> e != entityToExclude && e instanceof LivingEntity
+            );
+
+            if (nextRay == null) {
+                Vector missPosition = originPos.clone().add(direction.multiply(limit));
+                return new RayTraceResult(missPosition);
+            }
+
+            if (nextRay.getHitBlock() != null) {
+                currentRay = nextRay;
+                break;
+            }
+
+            if (nextRay.getHitEntity() != null) {
+                damageEntity(nextRay.getHitEntity(), damage, player, cause);
+                lastHitEntity = nextRay.getHitEntity();
+            }
+            
+            currentRay = nextRay;
+        }
+        
+        return currentRay;
+    }
+
+    private static void damageEntity(Entity entity, double damage, Player attacker, DamageCause cause) {
         if (entity instanceof LivingEntity livingEntity) {
-            damageCustom(livingEntity, damage, player, cause);
+            damageCustom(livingEntity, damage, attacker, cause);
         } else if (entity instanceof EnderCrystal crystal) {
-            Location cloc = crystal.getLocation();
+            Location crystalLocation = crystal.getLocation();
             crystal.remove();
-            cloc.getWorld().createExplosion(cloc, 4, false, false);
+            crystalLocation.getWorld().createExplosion(crystalLocation, 4, false, false);
         }
+    }
 
-        if (hitBlock != null && !hitBlock.isEmpty() && impact != null) {
-            impact.accept(hitLoc, hitBlock);
-        };
-
-        return ray;
+    private static void applyBlockImpact(RayTraceResult ray, World world, BiConsumer<Location, Block> impact) {
+        if (ray == null || impact == null) {
+            return;
+        }
+        
+        Block hitBlock = ray.getHitBlock();
+        if (hitBlock != null && !hitBlock.isEmpty()) {
+            Vector hitPos = ray.getHitPosition();
+            Location hitLocation = new Location(world, hitPos.getX(), hitPos.getY(), hitPos.getZ());
+            impact.accept(hitLocation, hitBlock);
+        }
     }
 
     public static void damageCustom(LivingEntity victim, double amount, Entity attacker, DamageCause cause) {
@@ -219,7 +298,7 @@ public abstract class WeaponUtil {
     public static void fireMachinegun(Player player) {
 //        player.getWorld().playSound(player, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 0.5f, 0.5f);
         player.getWorld().playSound(player, "quake.weapons.machinegun.fire", 0.5f, 1);
-        fireHitscan(player, 1.4, 2, 256, DamageCause.MACHINEGUN, WeaponUtil::bulletImpact);
+        fireHitscan(player, 1.4, 2, 256, DamageCause.MACHINEGUN, false, WeaponUtil::bulletImpact);
     }
 
     public static void fireShotgun(Player player) {
@@ -227,7 +306,7 @@ public abstract class WeaponUtil {
 //        player.getWorld().playSound(player, Sound.ENTITY_GENERIC_EXPLODE, 0.25f, 2f);
         player.getWorld().playSound(player, "quake.weapons.shotgun.fire", 0.5f, 1);
         for (int i = 0; i < 11; i++) {
-            fireHitscan(player, 2, 8, 256, DamageCause.SHOTGUN, WeaponUtil::bulletImpact);
+            fireHitscan(player, 2, 8, 256, DamageCause.SHOTGUN, false, WeaponUtil::bulletImpact);
         }
     }
 
@@ -280,7 +359,7 @@ public abstract class WeaponUtil {
     public static void fireLightning(Player player, boolean emitSound) {
         if (emitSound)
             player.getWorld().playSound(player, "quake.weapons.lightning_gun.fire", 0.5f, 1);
-        RayTraceResult ray = fireHitscan(player, 1.6, 0, 16, DamageCause.LIGHTNING, WeaponUtil::lightningImpact);
+        RayTraceResult ray = fireHitscan(player, 1.6, 0, 16, DamageCause.LIGHTNING, false, WeaponUtil::lightningImpact);
         if (ray == null) return;
         if (ray.getHitEntity() != null) {
             Entity victim = ray.getHitEntity();
@@ -351,7 +430,7 @@ public abstract class WeaponUtil {
 //        player.getWorld().playSound(player, Sound.BLOCK_BEACON_DEACTIVATE, 0.5f, 1f);
 //        player.getWorld().playSound(player, Sound.BLOCK_BEACON_ACTIVATE, 0.5f, 1f);
         player.getWorld().playSound(player, "quake.weapons.railgun.fire", 0.5f, 1);
-        RayTraceResult ray = fireHitscan(player, 20, 0, 256, DamageCause.RAILGUN, WeaponUtil::railImpact);
+        RayTraceResult ray = fireHitscan(player, 20, 0, 256, DamageCause.RAILGUN, true, WeaponUtil::railImpact);
         if (ray == null) return;
         if (ray.getHitEntity() != null) {
             Entity victim = ray.getHitEntity();
