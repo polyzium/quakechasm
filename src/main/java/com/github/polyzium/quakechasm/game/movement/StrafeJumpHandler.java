@@ -1,0 +1,80 @@
+/*
+ * Quakechasm, a Quake minigame plugin for Minecraft servers running PaperMC
+ * 
+ * Copyright (C) 2024-present Polyzium
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.github.polyzium.quakechasm.game.movement;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.title.Title;
+import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
+
+import java.time.Duration;
+
+import static com.github.polyzium.quakechasm.misc.MiscUtil.GRAVITY;
+
+// How to use: press sprint, hold down W and then look left or right
+public class StrafeJumpHandler {
+    private static final double AIR_ACCELERATION = 0.02;
+    private static final double MAX_SPEED_MULTIPLIER = 1.8;
+    private static final double ANGLE_THRESHOLD = 0.975;
+
+    public static void applyStrafeAcceleration(Player player, Vector velocity) {
+        if (player.isOnGround() || player.isFlying() || player.isSneaking() || !player.isSprinting()) {
+            return;
+        }
+
+        Vector horizontalVel = velocity.clone().setY(0);
+
+        if (horizontalVel.lengthSquared() < 0.01) {
+            return;
+        }
+
+        Vector lookDir = player.getEyeLocation().getDirection();
+
+        double alignment = lookDir.dot(horizontalVel.normalize());
+//        player.showTitle(Title.title(Component.empty(), Component.text(String.format("%.3f", alignment)), Title.Times.times(Duration.ZERO,Duration.ofMillis(200),Duration.ZERO)));
+
+
+        if (Math.abs(alignment) < ANGLE_THRESHOLD) {
+            double baseSpeed = player.getWalkSpeed() * 10;
+            double currentSpeed = horizontalVel.length();
+            double maxSpeed = baseSpeed * MAX_SPEED_MULTIPLIER;
+
+            if (currentSpeed >= maxSpeed) {
+                return;
+            }
+
+            double accelFactor = (ANGLE_THRESHOLD - Math.abs(alignment)) / ANGLE_THRESHOLD;
+            Vector acceleration = lookDir.multiply(AIR_ACCELERATION * accelFactor);
+
+            velocity.add(acceleration);
+
+            Vector newHorizontalVel = velocity.clone().setY(0);
+            if (newHorizontalVel.length() > maxSpeed) {
+                newHorizontalVel.normalize().multiply(maxSpeed);
+                velocity.setX(newHorizontalVel.getX());
+                velocity.setZ(newHorizontalVel.getZ());
+            }
+
+            velocity.setY(velocity.getY() - GRAVITY);
+
+            player.setVelocity(velocity);
+        }
+    }
+}

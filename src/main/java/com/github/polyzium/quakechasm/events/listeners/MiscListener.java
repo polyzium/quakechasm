@@ -24,8 +24,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.util.Vector;
 import com.github.polyzium.quakechasm.QuakePlugin;
 import com.github.polyzium.quakechasm.QuakeUserState;
+import com.github.polyzium.quakechasm.game.movement.StrafeJumpHandler;
 import com.github.polyzium.quakechasm.matchmaking.MatchmakingManager;
 
 public class MiscListener implements Listener {
@@ -65,49 +67,15 @@ public class MiscListener implements Listener {
         event.setDamage(2);
     }
 
-    // Bunnyhop/strafejumping (EXPERIMENTAL)
-//    @EventHandler
-//    public void onPlayerMove(PlayerMoveEvent event) {
-//        if (!event.hasChangedOrientation()) return;
-//
-//        Player player = event.getPlayer();
-//        Vector fromDir = event.getFrom().getDirection().clone();
-//        Vector toDir = event.getTo().getDirection().clone();
-//        Vector dirChange = toDir.clone().subtract(fromDir);
-//        double bhopFactor = dirChange.length()-0.2;
-//        if (bhopFactor < 0) return;
-//        if (bhopFactor > 0.2) bhopFactor = 0.2;
-//
-//        Vector velocity = event.getTo().clone().subtract(event.getFrom()).toVector();
-//        Vector addVelocity = velocity.clone().normalize().multiply(bhopFactor);
-//        if (!player.isFlying())
-//            addVelocity.setY(addVelocity.getY() - GRAVITY);
-//        else
-//            addVelocity.setY(0);
-//        if (velocity.length() > 0 && !player.isOnGround()) {
-//            velocity.add(addVelocity);
-//            player.setVelocity(velocity);
-//        }
-//
-////        player.sendMessage(String.valueOf(dirChange));
-//    }
+    // Strafejumping
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        
+        // Apply strafe acceleration when airborne and moving
+        Vector velocity = event.getTo().toVector().subtract(event.getFrom().toVector());
 
-
-    // Cancel vanilla Minecraft air drag (EXPERIMENTAL)
-//    @EventHandler
-//    public void onPlayerMove(PlayerMoveEvent event) {
-//        Player player = event.getPlayer();
-//        Vector velocity = event.getTo().clone().subtract(event.getFrom()).toVector();
-//        if (!(velocity.length() > 0 && !player.isOnGround()))
-//            return;
-//
-//        Vector newVelocity = velocity.clone();
-//        if (!player.isFlying())
-//            newVelocity.setY(newVelocity.getY() - GRAVITY);
-//        else
-//            newVelocity.setY(0);
-//
-//        player.setVelocity(newVelocity);
-//    }
+        StrafeJumpHandler.applyStrafeAcceleration(player, velocity);
+    }
 
 }
