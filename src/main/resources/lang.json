@@ -129,12 +129,11 @@
       "countdown": "Match starts in: <count>",
       "createResult": "<match_type> match with index <index>",
       "ctf": {
-        "capture": " captured the ",
         "flag": {
-          "endingGeneric": " flag!",
-          "returnedAuto": "The ",
-          "returnedByPlayer": " returned the ",
-          "taken": " got the "
+          "returnedAuto": "The <flag_color> flag has returned!",
+          "returnedByPlayer": "<player_name> returned the <flag_color> flag!",
+          "taken": "<player_name> got the <flag_color> flag!",
+          "capture": "<player_name> captured the <flag_color> flag!"
         },
         "name": "Capture The Flag",
         "startMessage": "Capture the enemy flag <capturelimit> times"
