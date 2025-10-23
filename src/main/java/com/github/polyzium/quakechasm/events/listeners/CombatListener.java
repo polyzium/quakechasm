@@ -358,46 +358,12 @@ public class CombatListener implements Listener {
         event.setCancelled(true);
     }
 
-    // No offhand, dash instead (default key is F)
+    // No offhand
     @EventHandler
     public void onHandSwap(PlayerSwapHandItemsEvent event) {
-//        event.getPlayer().sendMessage(TranslationManager.t("ERROR_OFFHAND", locale));
         event.setCancelled(true);
-
         Player player = event.getPlayer();
-        QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
-        if (!(userState.currentMatch == null || userState.currentMatch instanceof CTFMatch)) return;
-        if (userState.dashCooldown > 0) {
-            Hud.pickupMessage(
-                    player,
-                    TranslationManager.t("game.dash.cooldown", player,
-                            Placeholder.unparsed("seconds", String.valueOf((float) userState.dashCooldown/10)))
-                            .color(TextColor.color(0xff0000))
-            );
-            return;
-        }
-
-        // TODO replace with Y coord check
-        if (!player.isOnGround()) return;
-        Vector dashVector = player.getLocation().getDirection().clone();
-        dashVector.setY(0);
-        dashVector.normalize();
-        dashVector.multiply(3);
-        dashVector.setY(0.25);
-
-        player.setVelocity(dashVector);
-
-        userState.dashCooldown = 30;
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                userState.dashCooldown--;
-
-                if (userState.dashCooldown <= 0) {
-                    cancel();
-                }
-            }
-        }.runTaskTimer(QuakePlugin.INSTANCE, 0, 2);
+        player.sendMessage(TranslationManager.t("error.offhand", player));
     }
 
     // Also no offhand, but in inventory
