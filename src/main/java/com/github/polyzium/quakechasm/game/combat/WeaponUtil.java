@@ -235,7 +235,7 @@ public abstract class WeaponUtil {
         player.getWorld().playSound(player, "quake.weapons.rocket_launcher.fire", 0.5f, 1);
 
         Location playerLocation = player.getEyeLocation();
-        RayTraceResult raycast = cast(player, 0, 2);
+        RayTraceResult raycast = cast(player, 0, player.isSprinting() ? 6 : 2);
         if (raycast != null) {
             Location hitLoc = raycast.getHitPosition().toLocation(player.getWorld());
             explodeRocket(hitLoc, player, null);
@@ -305,7 +305,7 @@ public abstract class WeaponUtil {
 //        player.getWorld().playSound(player, Sound.ENTITY_ARROW_SHOOT, 0.5f, 1f);
         player.getWorld().playSound(player, "quake.weapons.plasma.fire", 0.5f, 1f);
 
-        RayTraceResult raycast = cast(player, 0, 2);
+        RayTraceResult raycast = cast(player, 0, player.isSprinting() ? 6 : 2);
         if (raycast != null) {
             Location hitLoc = raycast.getHitPosition().toLocation(player.getWorld());
             explodePlasma(hitLoc, player, null, true);
@@ -389,7 +389,7 @@ public abstract class WeaponUtil {
     private static void fireBFGGuts(Player player) {
         Location playerLocation = player.getLocation();
         playerLocation.setY(playerLocation.getY() + (player.getHeight() - 0.35));
-        RayTraceResult raycast = cast(player, 0, 2);
+        RayTraceResult raycast = cast(player, 0, player.isSprinting() ? 6 : 2);
         if (raycast != null) {
             Location hitLoc = raycast.getHitPosition().toLocation(player.getWorld());
             explodeBFG(hitLoc, player);
