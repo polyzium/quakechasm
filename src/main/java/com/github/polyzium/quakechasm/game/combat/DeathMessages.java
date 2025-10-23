@@ -55,5 +55,6 @@ public abstract class DeathMessages {
         FRAG.put(DamageCause.BFG, "obituary.bfg");
         FRAG.put(DamageCause.BFG_SPLASH, "obituary.bfg");
         FRAG.put(DamageCause.BFG_RAY, "obituary.bfgLaser");
+        FRAG.put(DamageCause.TELEFRAG, "obituary.telefrag");
     }
 }

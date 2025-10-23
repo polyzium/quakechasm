@@ -27,8 +27,11 @@ import org.bukkit.event.player.*;
 import org.bukkit.util.Vector;
 import com.github.polyzium.quakechasm.QuakePlugin;
 import com.github.polyzium.quakechasm.QuakeUserState;
+import com.github.polyzium.quakechasm.game.combat.DamageCause;
 import com.github.polyzium.quakechasm.game.movement.StrafeJumpHandler;
 import com.github.polyzium.quakechasm.matchmaking.MatchmakingManager;
+
+import static com.github.polyzium.quakechasm.game.combat.WeaponUtil.damageCustom;
 
 public class MiscListener implements Listener {
     @EventHandler
@@ -76,6 +79,19 @@ public class MiscListener implements Listener {
         Vector velocity = event.getTo().toVector().subtract(event.getFrom().toVector());
 
         StrafeJumpHandler.applyStrafeAcceleration(player, velocity);
+    }
+
+    // Telefrag: kill any entity at the teleport destination
+    @EventHandler
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        Player teleportingPlayer = event.getPlayer();
+
+        for (Entity entity : event.getTo().getWorld().getNearbyEntities(event.getTo(), 1.5, 2.0, 1.5)) {
+            if (entity.equals(teleportingPlayer)) continue;
+            if (!(entity instanceof LivingEntity victim)) continue;
+
+            damageCustom(victim, 1000, teleportingPlayer, DamageCause.TELEFRAG);
+        }
     }
 
 }

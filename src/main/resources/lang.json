@@ -222,6 +222,7 @@
       "rocket": "<victim_name> ate <attacker_name>'s rocket",
       "rocketSplash": "<victim_name> almost dodged <attacker_name>'s rocket",
       "shotgun": "<victim_name> was gunned down by <attacker_name>",
+      "telefrag": "<victim_name> tried to invade <attacker_name>'s personal space",
       "suicide": {
         "bfg": "<victim_name> should have used a smaller gun",
         "drowning": "<victim_name> sank like a rock",
