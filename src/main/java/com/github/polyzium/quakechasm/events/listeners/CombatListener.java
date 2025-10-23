@@ -38,6 +38,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerToggleSprintEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.Damageable;
@@ -378,5 +379,14 @@ public class CombatListener implements Listener {
         ItemStack cursorItem = event.getCursor().clone();
         event.setCancelled(true);
         event.getView().getPlayer().getInventory().addItem(cursorItem);
+    }
+
+    // Cancel sprint speed
+    @EventHandler
+    public void onSprint(PlayerToggleSprintEvent event) {
+        boolean sprinting = event.isSprinting();
+        Player player = event.getPlayer();
+
+        player.setWalkSpeed(sprinting ? 0.3076923077f : 0.4f);
     }
 }

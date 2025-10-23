@@ -105,6 +105,9 @@ public class Jumppad implements Trigger {
         }.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
 
         this.marker.getWorld().playSound(this.marker.getLocation(), "quake.world.jumppad", 1, 1);
+        if (entity instanceof Player player)
+            player.setSprinting(false);
+
         Location iloc = entity.getLocation();
         iloc.setY(iloc.y()+0.1);
         this.triggered = true;
