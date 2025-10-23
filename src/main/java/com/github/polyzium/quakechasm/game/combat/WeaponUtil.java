@@ -274,7 +274,7 @@ public abstract class WeaponUtil {
                 this.ticks++;
             }
         };
-        particleEmitterRunnable.runTaskTimer(Bukkit.getPluginManager().getPlugin("Quakechasm"), 1, 1);
+        particleEmitterRunnable.runTaskTimer(QuakePlugin.INSTANCE, 1, 1);
     }
 
     public static void fireLightning(Player player, boolean emitSound) {
@@ -344,7 +344,7 @@ public abstract class WeaponUtil {
                 this.ticks++;
             }
         };
-       particleEmitterRunnable.runTaskTimer(Bukkit.getPluginManager().getPlugin("Quakechasm"), 1, 1);
+       particleEmitterRunnable.runTaskTimer(QuakePlugin.INSTANCE, 1, 1);
     }
 
     public static void fireRailgun(Player player) {
@@ -458,6 +458,6 @@ public abstract class WeaponUtil {
                 this.ticks++;
             }
         };
-        particleEmitterRunnable.runTaskTimer(Bukkit.getPluginManager().getPlugin("Quakechasm"), 1, 1);
+        particleEmitterRunnable.runTaskTimer(QuakePlugin.INSTANCE, 1, 1);
     }
 }
