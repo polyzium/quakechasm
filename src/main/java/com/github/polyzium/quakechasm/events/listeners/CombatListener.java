@@ -290,7 +290,7 @@ public class CombatListener implements Listener {
             int modelData = itemMeta.getCustomModelData();
             WeaponUserState weaponState = userState.weaponState;
             PersistentDataContainer pdc = itemMeta.getPersistentDataContainer();
-            pdc.set(new NamespacedKey("darkchronics-quake", "ammo"), PersistentDataType.INTEGER, weaponState.ammo[modelData]);
+            pdc.set(new NamespacedKey(QuakePlugin.INSTANCE, "ammo"), PersistentDataType.INTEGER, weaponState.ammo[modelData]);
             handItem.setItemMeta(itemMeta);
         }
 
@@ -316,7 +316,7 @@ public class CombatListener implements Listener {
         ).findAny();
 
         PersistentDataContainer pdc = gunItem.getItemMeta().getPersistentDataContainer();
-        Integer ammo = pdc.get(new NamespacedKey("darkchronics-quake", "ammo"), PersistentDataType.INTEGER);
+        Integer ammo = pdc.get(new NamespacedKey(QuakePlugin.INSTANCE, "ammo"), PersistentDataType.INTEGER);
         if (foundGun.isPresent()) {
             if (ammo != null) {
                 weaponState.ammo[modelData] += ammo;
@@ -358,7 +358,7 @@ public class CombatListener implements Listener {
         event.setCancelled(true);
     }
 
-    // No offhand
+    // No offhand (default key is F)
     @EventHandler
     public void onHandSwap(PlayerSwapHandItemsEvent event) {
         event.setCancelled(true);

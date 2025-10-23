@@ -4,7 +4,7 @@ plugins {
     id("com.gradleup.shadow") version "9.2.2"
 }
 
-group = "ru.darkchronics"
+group = "com.github.polyzium"
 version = "1.0.0-alpha"
 
 repositories {
@@ -20,12 +20,6 @@ dependencies {
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.2.18")
     implementation("fr.mrmicky:fastboard:2.1.5")
     paperweight.paperDevBundle("1.21.8-R0.1-SNAPSHOT")
-}
-
-tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
-    relocate("fr.mrmicky.fastboard", "ru.darkchronics.fastboard")
-    // Also include all dependencies, if necessary
-    mergeServiceFiles() // if needed for service loaders
 }
 
 java {

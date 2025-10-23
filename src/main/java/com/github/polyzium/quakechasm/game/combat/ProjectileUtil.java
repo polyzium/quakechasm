@@ -19,6 +19,7 @@
 
 package com.github.polyzium.quakechasm.game.combat;
 
+import com.github.polyzium.quakechasm.QuakePlugin;
 import org.bukkit.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -37,12 +38,12 @@ import static com.github.polyzium.quakechasm.game.combat.WeaponUtil.damageCustom
 public abstract class ProjectileUtil {
     public static String getProjectileType(Projectile projectile) {
         PersistentDataContainer pdc = projectile.getPersistentDataContainer();
-        return pdc.get(new NamespacedKey("darkchronics-quake", "projectile_type"), PersistentDataType.STRING);
+        return pdc.get(new NamespacedKey(QuakePlugin.INSTANCE, "projectile_type"), PersistentDataType.STRING);
     }
 
     public static void setProjectileType(Projectile projectile, String type) {
         PersistentDataContainer pdc = projectile.getPersistentDataContainer();
-        pdc.set(new NamespacedKey("darkchronics-quake", "projectile_type"), PersistentDataType.STRING, type);
+        pdc.set(new NamespacedKey(QuakePlugin.INSTANCE, "projectile_type"), PersistentDataType.STRING, type);
     }
 
     public static void impactRocket(ProjectileHitEvent event) {

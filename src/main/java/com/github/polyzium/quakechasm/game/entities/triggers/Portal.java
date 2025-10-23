@@ -51,8 +51,8 @@ public class Portal implements Trigger {
         byte[] serializedTargetPos = SerializationUtils.serialize(this.targetLoc.toVector().toVector3d());
         byte[] serializedTargetDir = SerializationUtils.serialize(this.targetLoc.getDirection().toVector3d());
         PersistentDataContainer pdc = this.marker.getPersistentDataContainer();
-        pdc.set(new NamespacedKey("darkchronics-quake", "target_pos"), PersistentDataType.BYTE_ARRAY, serializedTargetPos);
-        pdc.set(new NamespacedKey("darkchronics-quake", "target_dir"), PersistentDataType.BYTE_ARRAY, serializedTargetDir);
+        pdc.set(new NamespacedKey(QuakePlugin.INSTANCE, "target_pos"), PersistentDataType.BYTE_ARRAY, serializedTargetPos);
+        pdc.set(new NamespacedKey(QuakePlugin.INSTANCE, "target_dir"), PersistentDataType.BYTE_ARRAY, serializedTargetDir);
 
         this.particleEmitter = this.newParticleEmitter();
         this.particleEmitter.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
@@ -63,8 +63,8 @@ public class Portal implements Trigger {
         this.marker = marker;
 
         PersistentDataContainer pdc = this.marker.getPersistentDataContainer();
-        byte[] targetPosData = pdc.get(new NamespacedKey("darkchronics-quake", "target_pos"), PersistentDataType.BYTE_ARRAY);
-        byte[] targetDirData = pdc.get(new NamespacedKey("darkchronics-quake", "target_dir"), PersistentDataType.BYTE_ARRAY);
+        byte[] targetPosData = pdc.get(new NamespacedKey(QuakePlugin.INSTANCE, "target_pos"), PersistentDataType.BYTE_ARRAY);
+        byte[] targetDirData = pdc.get(new NamespacedKey(QuakePlugin.INSTANCE, "target_dir"), PersistentDataType.BYTE_ARRAY);
         Vector targetPos = Vector.fromJOML((Vector3d) SerializationUtils.deserialize(targetPosData));
         Vector targetDir = Vector.fromJOML((Vector3d) SerializationUtils.deserialize(targetDirData));
         this.targetLoc = targetPos.toLocation(marker.getWorld()).setDirection(targetDir);

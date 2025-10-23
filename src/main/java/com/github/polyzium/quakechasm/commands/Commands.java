@@ -998,7 +998,7 @@ public abstract class Commands {
                 });
 
         new CommandAPICommand("quake")
-                .withAliases("dcquake")
+                .withAliases("quakechasm")
                 .withSubcommands(
                         entityCmd,
                         reloadCmd,

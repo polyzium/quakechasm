@@ -60,7 +60,6 @@ public class QuakeUserState {
     public Hud hud;
     public Match currentMatch;
     public DamageData lastDamage;
-    public int dashCooldown;
     public Chatroom currentChat = Chatroom.GLOBAL;
 
     public QuakeUserState(Player player) {

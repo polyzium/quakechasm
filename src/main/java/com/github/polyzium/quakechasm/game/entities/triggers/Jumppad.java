@@ -52,7 +52,7 @@ public class Jumppad implements Trigger {
 
         byte[] serializedLaunchVec = SerializationUtils.serialize(this.launchVec.toVector3d());
         PersistentDataContainer pdc = this.marker.getPersistentDataContainer();
-        pdc.set(new NamespacedKey("darkchronics-quake", "launch_vec"), PersistentDataType.BYTE_ARRAY, serializedLaunchVec);
+        pdc.set(new NamespacedKey(QuakePlugin.INSTANCE, "launch_vec"), PersistentDataType.BYTE_ARRAY, serializedLaunchVec);
 
         this.particleEmitter = this.newParticleEmitter();
         this.particleEmitter.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
@@ -63,7 +63,7 @@ public class Jumppad implements Trigger {
         this.marker = marker;
 
         PersistentDataContainer pdc = this.marker.getPersistentDataContainer();
-        byte[] launchVecData = pdc.get(new NamespacedKey("darkchronics-quake", "launch_vec"), PersistentDataType.BYTE_ARRAY);
+        byte[] launchVecData = pdc.get(new NamespacedKey(QuakePlugin.INSTANCE, "launch_vec"), PersistentDataType.BYTE_ARRAY);
         this.launchVec = Vector.fromJOML((Vector3d) SerializationUtils.deserialize(launchVecData));
 
         this.particleEmitter = this.newParticleEmitter();
