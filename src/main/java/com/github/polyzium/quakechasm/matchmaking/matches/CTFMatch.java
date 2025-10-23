@@ -28,6 +28,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.SoundCategory;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -235,11 +236,20 @@ public class CTFMatch extends Match {
 
         for (Player matchPlayer : this.players.keySet()) {
             matchPlayer.sendMessage(
-                    player.displayName()
-                            .append(TranslationManager.t("match.ctf.flag.taken", matchPlayer))
-                            .append(Component.text(belongingFlagTeam.name()).color(TextColor.color(Team.Colors.get(belongingFlagTeam))))
-                            .append(TranslationManager.t("match.ctf.flag.endingGeneric", matchPlayer))
+                    TranslationManager.t("match.ctf.flag.taken", matchPlayer,
+                            Placeholder.unparsed("player_name", player.getName()),
+                            Placeholder.component("flag_color", Component.text(belongingFlagTeam.name()).color(TextColor.color(Team.Colors.get(belongingFlagTeam)))))
             );
+            
+            // Play sound based on whether the flag taken is opponent's or player's team
+            Team playerTeam = this.players.get(matchPlayer);
+            if (playerTeam == belongingFlagTeam) {
+                // Player's team flag was taken by opponent
+                matchPlayer.playSound(matchPlayer, "quake.feedback.teamplay.flagtaken.yourteam", SoundCategory.NEUTRAL, 1, 1);
+            } else {
+                // Opponent's flag was taken by player's team
+                matchPlayer.playSound(matchPlayer, "quake.feedback.teamplay.flagtaken.opponent", SoundCategory.NEUTRAL, 1, 1);
+            }
         }
 
         this.updateInfo();
@@ -261,17 +271,25 @@ public class CTFMatch extends Match {
                 for (Player player : this.players.keySet()) {
                     if (returningPlayer != null)
                         player.sendMessage(
-                                returningPlayer.displayName()
-                                        .append(TranslationManager.t("match.ctf.flag.returnedByPlayer", player))
-                                        .append(Component.text(team.name()).color(TextColor.color(Team.Colors.get(team))))
-                                        .append(TranslationManager.t("match.ctf.flag.endingGeneric", player))
+                                TranslationManager.t("match.ctf.flag.returnedByPlayer", player,
+                                        Placeholder.unparsed("player_name", returningPlayer.getName()),
+                                        Placeholder.component("flag_color", Component.text(team.name()).color(TextColor.color(Team.Colors.get(team)))))
                         );
                     else
                         player.sendMessage(
-                                TranslationManager.t("match.ctf.flag.returnedAuto", player)
-                                        .append(Component.text(team.name()).color(TextColor.color(Team.Colors.get(team))))
-                                        .append(TranslationManager.t("match.ctf.flag.endingGeneric", player))
+                                TranslationManager.t("match.ctf.flag.returnedAuto", player,
+                                        Placeholder.component("flag_color", Component.text(team.name()).color(TextColor.color(Team.Colors.get(team)))))
                         );
+                    
+                    // Play sound based on whether the returned flag is opponent's or player's team
+                    Team playerTeam = this.players.get(player);
+                    if (playerTeam == team) {
+                        // Player's team flag was returned
+                        player.playSound(player, "quake.feedback.teamplay.flagreturn.yourteam", SoundCategory.NEUTRAL, 1, 1);
+                    } else {
+                        // Opponent's flag was returned
+                        player.playSound(player, "quake.feedback.teamplay.flagreturn.opponent", SoundCategory.NEUTRAL, 1, 1);
+                    }
                 }
 
                 flag.respawn();
@@ -323,11 +341,45 @@ public class CTFMatch extends Match {
 
         for (Player player : this.players.keySet()) {
             player.sendMessage(
-                    capturer.displayName()
-                            .append(TranslationManager.t("match.ctf.capture", player))
-                            .append(Component.text(capturerTeam.oppositeTeam().name()).color(TextColor.color(Team.Colors.get(capturerTeam.oppositeTeam()))))
-                            .append(TranslationManager.t("match.ctf.flag.endingGeneric", player))
+                    TranslationManager.t("match.ctf.flag.capture", player,
+                            Placeholder.unparsed("player_name", capturer.getName()),
+                            Placeholder.component("flag_color", Component.text(capturerTeam.oppositeTeam().name()).color(TextColor.color(Team.Colors.get(capturerTeam.oppositeTeam())))))
             );
+            
+            // Build subtitle with current score
+            Component subtitle;
+            if (captures[0] > captures[1]) {
+                // Red leads
+                subtitle = Component.text("Red leads " + captures[0] + " to " + captures[1])
+                    .color(TextColor.color(Team.Colors.get(Team.RED)));
+            } else if (captures[1] > captures[0]) {
+                // Blue leads
+                subtitle = Component.text("Blue leads " + captures[1] + " to " + captures[0])
+                    .color(TextColor.color(Team.Colors.get(Team.BLUE)));
+            } else {
+                // Teams are tied
+                subtitle = Component.text("Teams are tied " + captures[0] + " to " + captures[1])
+                    .color(TextColor.color(0xFFFF00));
+            }
+            
+            // Show title with capture message and score
+            player.showTitle(Title.title(
+                    TranslationManager.t("match.ctf.flag.capture", player,
+                            Placeholder.unparsed("player_name", capturer.getName()),
+                            Placeholder.component("flag_color", Component.text(capturerTeam.oppositeTeam().name()).color(TextColor.color(Team.Colors.get(capturerTeam.oppositeTeam()))))),
+                    subtitle,
+                    Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofMillis(500))
+            ));
+            
+            // Play sound based on whether the capturing team is player's team or opponent
+            Team playerTeam = this.players.get(player);
+            if (playerTeam == capturerTeam) {
+                // Player's team captured the flag
+                player.playSound(player, "quake.feedback.teamplay.flagcapture.yourteam", SoundCategory.NEUTRAL, 1, 1);
+            } else {
+                // Opponent team captured the flag
+                player.playSound(player, "quake.feedback.teamplay.flagcapture.opponent", SoundCategory.NEUTRAL, 1, 1);
+            }
         }
 
         // End match if capturelimit is reached
