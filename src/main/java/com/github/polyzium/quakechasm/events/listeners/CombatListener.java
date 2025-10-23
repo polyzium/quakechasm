@@ -144,12 +144,11 @@ public class CombatListener implements Listener {
                 Powerup.hasPowerup(player, PowerupType.PROTECTION)
         ) {
             assert userState != null;
-            player.sendMessage(event.getCause().toString());
             DamageData damageData = userState.lastDamage;
             if (
-                    event.getCause() == EntityDamageEvent.DamageCause.LAVA ||
+                    (event.getCause() == EntityDamageEvent.DamageCause.LAVA || event.getCause() == EntityDamageEvent.DamageCause.DROWNING) ||
                             (damageData != null && (damageData.getCause() == DamageCause.ROCKET_SPLASH ||
-                    damageData.getCause() == DamageCause.BFG_SPLASH))
+                    damageData.getCause() == DamageCause.BFG_SPLASH || damageData.getCause() == DamageCause.PLASMA_SPLASH))
             ) {
                 player.playSound(player, "quake.items.powerups.protection.protect", 0.5f, 1f);
                 event.setCancelled(true);
