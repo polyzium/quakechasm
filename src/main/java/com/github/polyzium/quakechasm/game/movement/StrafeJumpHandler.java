@@ -26,11 +26,12 @@ import org.bukkit.util.Vector;
 
 import java.time.Duration;
 
+import static com.github.polyzium.quakechasm.misc.MiscUtil.AIR_DRAG;
 import static com.github.polyzium.quakechasm.misc.MiscUtil.GRAVITY;
 
 // How to use: press sprint, hold down W and then look left or right
 public class StrafeJumpHandler {
-    private static final double AIR_ACCELERATION = 0.02;
+    private static final double AIR_ACCELERATION = 0.2;
     private static final double MAX_SPEED_MULTIPLIER = 1.8;
     private static final double ANGLE_THRESHOLD = 0.975;
 
@@ -48,8 +49,6 @@ public class StrafeJumpHandler {
         Vector lookDir = player.getEyeLocation().getDirection();
 
         double alignment = lookDir.dot(horizontalVel.normalize());
-//        player.showTitle(Title.title(Component.empty(), Component.text(String.format("%.3f", alignment)), Title.Times.times(Duration.ZERO,Duration.ofMillis(200),Duration.ZERO)));
-
 
         if (Math.abs(alignment) < ANGLE_THRESHOLD) {
             double baseSpeed = player.getWalkSpeed() * 10;
@@ -61,6 +60,9 @@ public class StrafeJumpHandler {
             }
 
             double accelFactor = (ANGLE_THRESHOLD - Math.abs(alignment)) / ANGLE_THRESHOLD;
+
+            lookDir.setY(0);
+            lookDir.normalize();
             Vector acceleration = lookDir.multiply(AIR_ACCELERATION * accelFactor);
 
             velocity.add(acceleration);
@@ -73,6 +75,8 @@ public class StrafeJumpHandler {
             }
 
             velocity.setY(velocity.getY() - GRAVITY);
+            velocity.setX(velocity.getX() * 0.95);
+            velocity.setZ(velocity.getZ() * 0.95);
 
             player.setVelocity(velocity);
         }
