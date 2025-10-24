@@ -265,7 +265,7 @@ public class FFAMatch extends Match {
         List<Map.Entry<Player, Integer>> sortedList = new ArrayList<>(scores.entrySet());
         sortedList.sort(Map.Entry.comparingByValue(Comparator.reverseOrder()));
 
-        // End match if fraglimit of 10 is reached
+        // End match if the fraglimit is reached
         Map.Entry<Player, Integer> winningPlayerEntry = sortedList.get(0);
         Player winningPlayer = winningPlayerEntry.getKey();
         int winningScore = winningPlayerEntry.getValue();
@@ -280,6 +280,7 @@ public class FFAMatch extends Match {
                 player.sendMessage(TranslationManager.t("match.aftermath.scoreboardBegin", player));
                 player.sendMessage(this.getScoreboard());
             }
+
             this.end();
         }
     }

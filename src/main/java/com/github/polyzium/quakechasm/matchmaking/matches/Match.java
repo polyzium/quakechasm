@@ -27,14 +27,13 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
-import org.bukkit.Bukkit;
-import org.bukkit.Color;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import net.kyori.adventure.title.Title;
+import org.bukkit.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
 import org.jetbrains.annotations.NotNull;
 import com.github.polyzium.quakechasm.QuakePlugin;
@@ -48,6 +47,7 @@ import com.github.polyzium.quakechasm.misc.MiscUtil;
 import com.github.polyzium.quakechasm.misc.Pair;
 import com.github.polyzium.quakechasm.misc.TranslationManager;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -58,6 +58,7 @@ public abstract class Match implements ForwardingAudience {
     protected Scoreboard vanillaScoreboard;
     protected org.bukkit.scoreboard.Team vanillaRedTeam;
     protected org.bukkit.scoreboard.Team vanillaBlueTeam;
+    public boolean matchEnding = false;
     public Match(QMap map) {
         this.map = map;
         this.map.chunkLoad();
@@ -146,16 +147,37 @@ public abstract class Match implements ForwardingAudience {
         this.sendMessage(player.getName()+" left the match");
     }
     public void end() {
+        matchEnding = true;
+
         for (Player player : players.keySet()) {
-            cleanup(player);
+            player.playSound(player, "quake.feedback.match_end", SoundCategory.NEUTRAL, 1, 1);
         }
 
-        if (this.isTeamMatch()) {
-            this.vanillaRedTeam.unregister();
-            this.vanillaBlueTeam.unregister();
-        }
+        Match that = this;
+        new BukkitRunnable() {
+            int endTimer = 10;
+            @Override
+            public void run() {
+                endTimer--;
+                if (endTimer <= 5)
+                    that.showTitle(Title.title(Component.empty(), Component.text("Teleporting to lobby in "+endTimer), Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ofSeconds(1))));
 
-        QuakePlugin.INSTANCE.matchManager.matches.remove(this);
+                if (endTimer == 0) {
+                    for (Player player : players.keySet()) {
+                        cleanup(player);
+                    }
+
+                    if (that.isTeamMatch()) {
+                        that.vanillaRedTeam.unregister();
+                        that.vanillaBlueTeam.unregister();
+                    }
+
+                    QuakePlugin.INSTANCE.matchManager.matches.remove(that);
+
+                    cancel();
+                }
+            }
+        }.runTaskTimer(QuakePlugin.INSTANCE, 20, 20);
     }
     public abstract Team assignTeam(Player player);
     public static void setArmor(Player player, Team team) {
@@ -181,6 +203,9 @@ public abstract class Match implements ForwardingAudience {
         userState.switchChat(Chatroom.GLOBAL);
         player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
 
+        // Restore normal movement speeds
+        player.setWalkSpeed(0.4f);
+
         MiscUtil.teleEffect(player.getLocation(), true);
         player.teleport(QuakePlugin.LOBBY);
         userState.reset();
@@ -189,7 +214,7 @@ public abstract class Match implements ForwardingAudience {
             player.listPlayer(onlinePlayer);
         }
 
-        player.sendPlayerListHeader(Component.empty());
+        player.sendPlayerListHeaderAndFooter(Component.empty(), Component.empty());
     }
     public abstract void onDeath(Player victim, Entity attacker, DamageCause cause);
     public abstract List<Team> allowedTeams();

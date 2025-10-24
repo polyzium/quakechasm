@@ -74,6 +74,13 @@ public class MiscListener implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+
+        // Immobilize when match is ending (prevents walking speed bypass hacks)
+        QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+        if (userState.currentMatch != null && userState.currentMatch.matchEnding) {
+            event.setCancelled(true);
+            return;
+        }
         
         // Apply strafe acceleration when airborne and moving
         Vector velocity = event.getTo().toVector().subtract(event.getFrom().toVector());
