@@ -68,7 +68,12 @@ public class CombatListener implements Listener {
         Player player = event.getPlayer();
         if (player.getInventory().getItemInMainHand().getType() != Material.CARROT_ON_A_STICK) return;
 
+        // Do not shoot when match is ending (immobilized)
         QuakeUserState state = QuakePlugin.INSTANCE.userStates.get(player);
+        if (state.currentMatch != null && state.currentMatch.matchEnding) {
+            event.setCancelled(true);
+            return;
+        }
         state.weaponState.shoot(player);
     }
 
