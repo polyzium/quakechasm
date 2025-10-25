@@ -505,6 +505,7 @@ public class CTFMatch extends Match {
 
     @Override
     public void onDeath(Player victim, Entity attacker, DamageCause cause) {
+        super.onDeath(victim, attacker, cause);
         for (Player viewer : this.players.keySet()) {
             viewer.sendMessage(getDeathMessage(victim, attacker, cause, viewer.locale()));
         }

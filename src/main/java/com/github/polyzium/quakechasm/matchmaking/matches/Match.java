@@ -216,7 +216,17 @@ public abstract class Match implements ForwardingAudience {
 
         player.sendPlayerListHeaderAndFooter(Component.empty(), Component.empty());
     }
-    public abstract void onDeath(Player victim, Entity attacker, DamageCause cause);
+    public void onDeath(Player victim, Entity attacker, DamageCause cause) {
+        QuakeUserState victimState = QuakePlugin.INSTANCE.userStates.get(victim);
+        victimState.consecutiveRailgunHits = 0;
+        victimState.lastKillTime = 0;
+
+        if (attacker instanceof Player player && attacker != victim) {
+            QuakeUserState attackerState = QuakePlugin.INSTANCE.userStates.get(player);
+            attackerState.checkExcellentMedal();
+            attackerState.lastKillTime = System.currentTimeMillis();
+        }
+    };
     public abstract List<Team> allowedTeams();
     public boolean isTeamMatch() {
         List<Team> allowedTeams = this.allowedTeams();
