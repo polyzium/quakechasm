@@ -20,6 +20,7 @@
 package com.github.polyzium.quakechasm.game.entities.triggers;
 
 import org.apache.commons.lang3.SerializationUtils;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
@@ -37,6 +38,8 @@ import com.github.polyzium.quakechasm.QuakePlugin;
 import com.github.polyzium.quakechasm.game.entities.QEntityUtil;
 import com.github.polyzium.quakechasm.game.entities.Trigger;
 import com.github.polyzium.quakechasm.misc.ParticleUtil;
+
+import java.util.Random;
 
 public class Jumppad implements Trigger {
     static BoundingBox boundingBox = new BoundingBox(-0.5, 0, -0.5, 0.5, 1, 0.5);
@@ -67,13 +70,14 @@ public class Jumppad implements Trigger {
         this.launchVec = Vector.fromJOML((Vector3d) SerializationUtils.deserialize(launchVecData));
 
         this.particleEmitter = this.newParticleEmitter();
-        this.particleEmitter.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
+        this.particleEmitter.runTaskTimer(QuakePlugin.INSTANCE, 0, 15);
 
         QuakePlugin.INSTANCE.triggers.add(this);
     }
 
     private BukkitRunnable newParticleEmitter() {
         return new BukkitRunnable() {
+
             @Override
             public void run() {
                 if (marker.isDead()) {
@@ -81,8 +85,23 @@ public class Jumppad implements Trigger {
                     return;
                 }
 
-                Location loc2 = marker.getLocation();
-                loc2.getWorld().spawnParticle(Particle.INSTANT_EFFECT, loc2, 1, 0.25, 0, 0.25, 0);
+                Location center = marker.getLocation();
+                center.setY(center.getY() + 0.05);
+                Color trailColor = Color.fromRGB(255, 200, 0);
+                int durationTicks = 15;
+
+                for (int i = 0; i < 32; i++) {
+                    double angle = (i * Math.PI / 16);
+
+                    double destX = Math.cos(angle) * 0.5;
+                    double destZ = Math.sin(angle) * 0.5;
+
+                    Location targetLocation = center.clone().add(destX, 0, destZ);
+
+                    Particle.Trail trailData = new Particle.Trail(targetLocation, trailColor, durationTicks);
+
+                    center.getWorld().spawnParticle(Particle.TRAIL, center, 0, trailData);
+                }
             }
         };
     }
@@ -112,18 +131,24 @@ public class Jumppad implements Trigger {
         iloc.setY(iloc.y()+0.1);
         this.triggered = true;
 
-        new BukkitRunnable() {
-            int iter = 0;
-            Location loc = iloc;
-            @Override
-            public void run() {
-                if (iter >= 4)
-                    this.cancel();
+        Location center = marker.getLocation();
+        center.setY(center.getY() + 0.05);
+        Color trailColor = Color.fromRGB(0xFFFFFF);
 
-                ParticleUtil.drawParticlesCircle(Particle.ELECTRIC_SPARK, loc, (double) iter /2, 32);
-                iter++;
-            }
-        }.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
+        Random randomGenerator = new Random();
+        for (int i = 0; i < 64; i++) {
+            double angle = (i * Math.PI / 32);
+
+            int random = randomGenerator.nextInt((10 - 5) + 1) + 5;
+            double destX = Math.cos(angle) * 1.5 * ((double) random / 10);
+            double destZ = Math.sin(angle) * 1.5 * ((double) random / 10);
+
+            Location targetLocation = iloc.clone().add(destX, 0, destZ);
+
+            Particle.Trail trailData = new Particle.Trail(targetLocation, trailColor, random);
+
+            center.getWorld().spawnParticle(Particle.TRAIL, iloc, 0, trailData);
+        }
 
         new BukkitRunnable() {
             @Override
