@@ -32,7 +32,6 @@ import com.github.polyzium.quakechasm.game.combat.powerup.Powerup;
 import com.github.polyzium.quakechasm.game.combat.powerup.PowerupType;
 import com.github.polyzium.quakechasm.matchmaking.Team;
 
-import java.util.Arrays;
 import java.util.function.BiConsumer;
 
 import static com.github.polyzium.quakechasm.game.combat.ProjectileUtil.*;
@@ -159,6 +158,9 @@ public abstract class WeaponUtil {
         RayTraceResult initialRay = cast(player, spread, limit);
 
         if (initialRay == null) {
+            if (cause == DamageCause.RAILGUN)
+                QuakePlugin.INSTANCE.userStates.get(player).consecutiveRailgunHits = 0;
+
             return createMissResult(player, limit);
         }
 
@@ -181,8 +183,11 @@ public abstract class WeaponUtil {
         Entity previousHitEntity = null;
 
         if (currentRay.getHitEntity() != null) {
-            damageEntity(currentRay.getHitEntity(), damage, player, cause);
+            hitscanDamageEntity(currentRay.getHitEntity(), damage, player, cause);
             previousHitEntity = currentRay.getHitEntity();
+        } else {
+            if (cause == DamageCause.RAILGUN)
+                QuakePlugin.INSTANCE.userStates.get(player).consecutiveRailgunHits = 0;
         }
 
         if (pierce) {
@@ -233,7 +238,7 @@ public abstract class WeaponUtil {
             }
 
             if (nextRay.getHitEntity() != null) {
-                damageEntity(nextRay.getHitEntity(), damage, player, cause);
+                hitscanDamageEntity(nextRay.getHitEntity(), damage, player, cause);
                 lastHitEntity = nextRay.getHitEntity();
             }
             
@@ -243,7 +248,7 @@ public abstract class WeaponUtil {
         return currentRay;
     }
 
-    private static void damageEntity(Entity entity, double damage, Player attacker, DamageCause cause) {
+    private static void hitscanDamageEntity(Entity entity, double damage, Player attacker, DamageCause cause) {
         if (entity instanceof LivingEntity livingEntity) {
             damageCustom(livingEntity, damage, attacker, cause);
         } else if (entity instanceof EnderCrystal crystal) {
@@ -269,6 +274,13 @@ public abstract class WeaponUtil {
     public static void damageCustom(LivingEntity victim, double amount, Entity attacker, DamageCause cause) {
         if (cause == null)
             cause = DamageCause.UNKNOWN;
+
+        if (cause == DamageCause.RAILGUN && attacker instanceof Player attackerPlayer) {
+            QuakeUserState attackerState = QuakePlugin.INSTANCE.userStates.get(attackerPlayer);
+            attackerState.consecutiveRailgunHits++;
+            attacker.sendMessage(String.valueOf(attackerState.consecutiveRailgunHits));
+            attackerState.checkImpressiveMedal();
+        }
 
         victim.setNoDamageTicks(0);
         if (victim instanceof Player player && player.getGameMode() != GameMode.CREATIVE)

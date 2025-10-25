@@ -20,12 +20,15 @@
 package com.github.polyzium.quakechasm;
 
 import com.github.polyzium.quakechasm.game.combat.DamageData;
+import com.github.polyzium.quakechasm.game.combat.MedalType;
 import com.github.polyzium.quakechasm.game.combat.WeaponType;
 import com.github.polyzium.quakechasm.game.combat.WeaponUserState;
 import com.github.polyzium.quakechasm.game.combat.WeaponUtil;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
@@ -45,8 +48,10 @@ import com.github.polyzium.quakechasm.misc.Chatroom;
 import com.github.polyzium.quakechasm.misc.MiscUtil;
 import com.github.polyzium.quakechasm.misc.TranslationManager;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class QuakeUserState {
     private Player player;
@@ -61,6 +66,11 @@ public class QuakeUserState {
     public Match currentMatch;
     public DamageData lastDamage;
     public Chatroom currentChat = Chatroom.GLOBAL;
+    
+    // Medal tracking
+    public HashMap<MedalType, Integer> medals = new HashMap<>();
+    public long lastKillTime = 0;
+    public int consecutiveRailgunHits = 0;
 
     public QuakeUserState(Player player) {
         this.player = player;
@@ -85,6 +95,11 @@ public class QuakeUserState {
         this.player.setHealth(20);
         this.player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(20);
         this.player.getInventory().clear();
+        
+        // Reset medal tracking
+        this.medals.clear();
+        this.lastKillTime = 0;
+        this.consecutiveRailgunHits = 0;
     }
 
     public void initForMatch() {
@@ -197,5 +212,35 @@ public class QuakeUserState {
             }
         };
         healthDecreaser.runTaskTimer(QuakePlugin.INSTANCE, 20, 20);
+    }
+
+    public void awardMedal(MedalType medalType) {
+        int count = medals.getOrDefault(medalType, 0) + 1;
+        medals.put(medalType, count);
+
+        String medalText = medalType.getDisplayName() + " x" + count;
+
+        player.sendMessage(Component.text("Medal awarded: " + medalText).color(TextColor.color(0xFFD700)));
+        
+//        player.showTitle(Title.title(
+//                Component.text(medalText).color(TextColor.color(0xFFD700)),
+//                Component.empty(),
+//                Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ofMillis(500))
+//        ));
+    }
+
+    public void checkExcellentMedal() {
+        long currentTime = System.currentTimeMillis();
+        
+        if (lastKillTime != 0 && (currentTime - lastKillTime) <= 2000) {
+            awardMedal(MedalType.EXCELLENT);
+        }
+        
+        lastKillTime = currentTime;
+    }
+
+    public void checkImpressiveMedal() {
+        if (consecutiveRailgunHits >= 2)
+            awardMedal(MedalType.IMPRESSIVE);
     }
 }

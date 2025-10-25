@@ -42,7 +42,7 @@ import java.time.Duration;
 import java.util.*;
 
 public class FFAMatch extends Match {
-    private int fraglimit = 10;
+    public int fraglimit = 10;
     private int needPlayers = 2;
     private HashMap<Player, Integer> scores = new HashMap<>();
     private boolean started = false;
@@ -234,6 +234,7 @@ public class FFAMatch extends Match {
 
     @Override
     public void onDeath(Player victim, Entity attacker, DamageCause cause) {
+        super.onDeath(victim, attacker, cause);
         for (Player viewer : this.players.keySet()) {
             viewer.sendMessage(getDeathMessage(victim, attacker, cause, viewer.locale()));
         }
