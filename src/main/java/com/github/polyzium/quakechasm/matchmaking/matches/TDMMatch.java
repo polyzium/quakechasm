@@ -278,6 +278,11 @@ public class TDMMatch extends Match {
         } else if (attacker == null || victim == attacker) {
             Integer oldScore = scores.get(victim);
             scores.put(victim, oldScore-1);
+            switch (players.get(victim)) {
+                case RED -> teamScores[0] -= 1;
+                case BLUE -> teamScores[1] -= 1;
+                default -> throw new IllegalArgumentException("Got a teamkill not from red or blue teams");
+            }
             victim.playSound(victim, "quake.feedback.score_down", SoundCategory.NEUTRAL, 1, 1);
         }
 
