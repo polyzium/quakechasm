@@ -199,9 +199,13 @@ public abstract class WeaponUtil {
 
     private static RayTraceResult processPiercingShot(RayTraceResult initialRay, Player player, double damage, DamageCause cause, double limit, Entity previousHitEntity) {
         RayTraceResult currentRay = initialRay;
-        Entity lastHitEntity = previousHitEntity;
         Location eyeLocation = player.getEyeLocation();
         Vector originPos = eyeLocation.toVector();
+
+        java.util.Set<Entity> hitEntities = new java.util.HashSet<>();
+        if (previousHitEntity != null) {
+            hitEntities.add(previousHitEntity);
+        }
 
         while (currentRay != null && currentRay.getHitEntity() != null) {
             Vector currentHitPos = currentRay.getHitPosition();
@@ -215,8 +219,7 @@ public abstract class WeaponUtil {
             
             // Preserve spread by calculating the direction vector
             Vector direction = currentHitPos.clone().subtract(originPos).normalize();
-
-            Entity entityToExclude = lastHitEntity;
+            
             RayTraceResult nextRay = player.getWorld().rayTrace(
                 currentHitPos.toLocation(player.getWorld()),
                 direction,
@@ -224,7 +227,7 @@ public abstract class WeaponUtil {
                 FluidCollisionMode.NEVER,
                 true,
                 0.35,
-                e -> e != entityToExclude && e instanceof LivingEntity
+                e -> !hitEntities.contains(e) && e instanceof LivingEntity
             );
 
             if (nextRay == null) {
@@ -239,7 +242,7 @@ public abstract class WeaponUtil {
 
             if (nextRay.getHitEntity() != null) {
                 hitscanDamageEntity(nextRay.getHitEntity(), damage, player, cause);
-                lastHitEntity = nextRay.getHitEntity();
+                hitEntities.add(nextRay.getHitEntity());
             }
             
             currentRay = nextRay;
