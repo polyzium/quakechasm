@@ -31,8 +31,12 @@ import com.github.polyzium.quakechasm.QuakeUserState;
 import com.github.polyzium.quakechasm.game.combat.powerup.Powerup;
 import com.github.polyzium.quakechasm.game.combat.powerup.PowerupType;
 import com.github.polyzium.quakechasm.matchmaking.Team;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Random;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static com.github.polyzium.quakechasm.game.combat.ProjectileUtil.*;
 
@@ -93,9 +97,8 @@ public abstract class WeaponUtil {
         ));
     }
 
-    public static void spawnParticlesLine(Location startLocation, Location endLocation, Particle particle) {
+    public static void spawnParticlesLine(Location startLocation, Location endLocation, double density, Consumer<Location> particleFunction) {
         World world = startLocation.getWorld();
-        double density = 4;
 
         double distance = startLocation.distance(endLocation);
         int particleCount = (int) (distance * density);
@@ -107,16 +110,25 @@ public abstract class WeaponUtil {
             double z = startLocation.getZ() + ratio * (endLocation.getZ() - startLocation.getZ());
 
             Location particleLocation = new Location(world, x, y, z);
-            world.spawnParticle(particle, particleLocation, 1, 0, 0, 0, 0);
+            particleFunction.accept(particleLocation);
         }
     }
 
     public static void railTrail(Location startLocation, Location endLocation) {
         World world = startLocation.getWorld();
-        double density = 4;
+        double density = 8;
+        Color trailColor = Color.fromRGB(0x00FF00);
+        int durationTicks = 10;
 
         double distance = startLocation.distance(endLocation);
         int particleCount = (int) (distance * density);
+        
+        // Calculate direction vector for the trail
+        Vector direction = endLocation.toVector().subtract(startLocation.toVector()).normalize();
+        
+        // Create perpendicular vectors for spiral calculation
+        Vector perpendicular1 = new Vector(-direction.getZ(), 0, direction.getX()).normalize();
+        Vector perpendicular2 = direction.clone().crossProduct(perpendicular1).normalize();
 
         for (int i = 0; i < particleCount; i++) {
             double ratio = (double) i / particleCount;
@@ -125,7 +137,20 @@ public abstract class WeaponUtil {
             double z = startLocation.getZ() + ratio * (endLocation.getZ() - startLocation.getZ());
 
             Location particleLocation = new Location(world, x, y, z);
-            world.spawnParticle(Particle.DUST, particleLocation, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x00FF00), 1), true);
+            
+            // Create spiral pattern around the beam
+            double angle = i * Math.PI / 4 / (density/4); // Controls spiral tightness
+            double radius = 0.15; // Spiral radius
+            
+            // Calculate spiral offset using perpendicular vectors
+            double offsetX = Math.cos(angle) * radius;
+            double offsetY = Math.sin(angle) * radius;
+            
+            Vector offset = perpendicular1.clone().multiply(offsetX).add(perpendicular2.clone().multiply(offsetY));
+            Location targetLocation = particleLocation.clone().add(offset);
+            
+            Particle.Trail trailData = new Particle.Trail(targetLocation, trailColor, durationTicks);
+            world.spawnParticle(Particle.TRAIL, particleLocation, 1, 0, 0, 0, 0, trailData, true);
         }
     }
 
@@ -146,12 +171,39 @@ public abstract class WeaponUtil {
         loc.getWorld().playSound(loc, "quake.weapons.impact_lightning", 0.5f, 1);
     }
 
-    public static void railImpact(Location loc, Block hitBlock) {
-        loc.getWorld().spawnParticle(Particle.LARGE_SMOKE, loc, 8, 0,0,0, 0.05);
-
-//        loc.getWorld().playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 0.5f, 2);
-
+    public static void railImpact(Location loc, Block hitBlock, Vector hitNormal) {
         loc.getWorld().playSound(loc, "quake.weapons.impact_energy", 0.5f, 1);
+
+        Location center = loc.clone();
+        Vector normal = hitNormal.clone().normalize();
+        center.add(normal.clone().multiply(0.05));
+        
+        Color trailColor = Color.fromRGB(0x00FF00);
+        Random random = new Random();
+
+        Vector tangent;
+        if (Math.abs(normal.getX()) > 0.1 || Math.abs(normal.getZ()) > 0.1) {
+            tangent = new Vector(0, 1, 0).crossProduct(normal).normalize();
+        } else {
+            tangent = new Vector(1, 0, 0).crossProduct(normal).normalize();
+        }
+
+        Vector bitangent = normal.crossProduct(tangent).normalize();
+        
+        for (int i = 0; i < 32; i++) {
+            double tangentOffset = (random.nextDouble() - 0.5) * 2.0;
+            double bitangentOffset = (random.nextDouble() - 0.5) * 2.0;
+
+            Vector offset = tangent.clone().multiply(tangentOffset)
+                    .add(bitangent.clone().multiply(bitangentOffset));
+
+            int durationTicks = random.nextInt(8) + 5; // 5 to 12 ticks
+            
+            Location targetLocation = center.clone().add(offset);
+            Particle.Trail trailData = new Particle.Trail(targetLocation, trailColor, durationTicks);
+            
+            center.getWorld().spawnParticle(Particle.TRAIL, center, 0, trailData);
+        }
     }
 
     public static RayTraceResult fireHitscan(Player player, double damage, double spread, double limit, DamageCause cause, boolean pierce, BiConsumer<Location, Block> impact) {
@@ -273,6 +325,25 @@ public abstract class WeaponUtil {
             impact.accept(hitLocation, hitBlock);
         }
     }
+    
+    private static void applyBlockImpactWithNormal(RayTraceResult ray, World world, TriConsumer<Location, Block, Vector> impact) {
+        if (ray == null || impact == null) {
+            return;
+        }
+        
+        Block hitBlock = ray.getHitBlock();
+        if (hitBlock != null && !hitBlock.isEmpty()) {
+            Vector hitPos = ray.getHitPosition();
+            Vector hitNormal = ray.getHitBlockFace() != null ? ray.getHitBlockFace().getDirection() : new Vector(0, 1, 0);
+            Location hitLocation = new Location(world, hitPos.getX(), hitPos.getY(), hitPos.getZ());
+            impact.accept(hitLocation, hitBlock, hitNormal);
+        }
+    }
+    
+    @FunctionalInterface
+    private interface TriConsumer<T, U, V> {
+        void accept(T t, U u, V v);
+    }
 
     public static void damageCustom(LivingEntity victim, double amount, Entity attacker, DamageCause cause) {
         if (cause == null)
@@ -386,7 +457,7 @@ public abstract class WeaponUtil {
         Vector hitPos = ray.getHitPosition();
         Location hitLoc = new Location(player.getWorld(), hitPos.getX(), hitPos.getY(), hitPos.getZ());
 
-        spawnParticlesLine(playerLoc, hitLoc, Particle.ELECTRIC_SPARK);
+        spawnParticlesLine(playerLoc, hitLoc, 4, particleLocation -> playerLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, particleLocation, 1, 0, 0, 0, 0));
 
 //        Entity entity = ray.getHitEntity();
 //        if (entity instanceof LivingEntity livingEntity) {
@@ -445,7 +516,10 @@ public abstract class WeaponUtil {
 //        player.getWorld().playSound(player, Sound.BLOCK_BEACON_DEACTIVATE, 0.5f, 1f);
 //        player.getWorld().playSound(player, Sound.BLOCK_BEACON_ACTIVATE, 0.5f, 1f);
         player.getWorld().playSound(player, "quake.weapons.railgun.fire", 0.5f, 1);
-        RayTraceResult ray = fireHitscan(player, 20, 0, 256, DamageCause.RAILGUN, true, WeaponUtil::railImpact);
+        RayTraceResult ray = fireHitscan(player, 20, 0, 256, DamageCause.RAILGUN, true, null);
+        
+        // Apply railgun impact with normal vector
+        applyBlockImpactWithNormal(ray, player.getWorld(), WeaponUtil::railImpact);
         if (ray == null) return;
         if (ray.getHitEntity() != null) {
             Entity victim = ray.getHitEntity();
@@ -544,7 +618,7 @@ public abstract class WeaponUtil {
                         }
 
                         damageCustom(livingEntity, 1, player, DamageCause.BFG_RAY);
-                        spawnParticlesLine(ploc, livingEntity.getEyeLocation(), Particle.ELECTRIC_SPARK);
+                        spawnParticlesLine(ploc, livingEntity.getEyeLocation(), 8, particleLocation -> ploc.getWorld().spawnParticle(Particle.TRAIL, particleLocation, 1, 0, 0, 0, 0, new Particle.Trail(particleLocation, Color.fromRGB(0x00FF00), 2)));
                         livingEntity.getWorld().playSound(livingEntity.getLocation(), "quake.weapons.bfg.laser", 0.5f, 1);
                     }
                 }

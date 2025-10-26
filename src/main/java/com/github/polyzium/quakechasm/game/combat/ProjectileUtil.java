@@ -33,6 +33,8 @@ import org.bukkit.util.Vector;
 import com.github.polyzium.quakechasm.game.combat.powerup.Powerup;
 import com.github.polyzium.quakechasm.game.combat.powerup.PowerupType;
 
+import java.util.Random;
+
 import static com.github.polyzium.quakechasm.game.combat.WeaponUtil.damageCustom;
 
 public abstract class ProjectileUtil {
@@ -71,7 +73,29 @@ public abstract class ProjectileUtil {
         loc.getWorld().playSound(loc, "quake.weapons.bfg.explode", 2, 1);
 //        loc.getWorld().spawnParticle(Particle.EXPLOSION, loc, 16, 0,0,0, 0.3);
         loc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, loc, 1, 0, 0, 0, 0.0, null, true);
-        loc.getWorld().spawnParticle(Particle.DUST, loc, 64, 1, 1, 1, 1, new Particle.DustOptions(Color.fromRGB(0x00FF00), 2));
+//        loc.getWorld().spawnParticle(Particle.DUST, loc, 64, 1, 1, 1, 1, new Particle.DustOptions(Color.fromRGB(0x00FF00), 2));
+        
+        // Spawn green TRAIL particles on explosion with randomized destinations and durations
+        Location center = loc.clone();
+        center.setY(center.getY() + 0.05);
+        Color trailColor = Color.fromRGB(0x00FF00);
+        Random random = new Random();
+        
+        for (int i = 0; i < 1024; i++) {
+            // Randomize destination in all directions with larger spread
+            double destX = (random.nextDouble() - 0.5) * 8.0; // -2.0 to 2.0
+            double destY = (random.nextDouble() - 0.5) * 8.0; // 0 to 2.5 upward
+            double destZ = (random.nextDouble() - 0.5) * 8.0; // -2.0 to 2.0
+            
+            // Randomize duration for varied trail lengths
+            int durationTicks = random.nextInt(30); // 8 to 17 ticks
+
+            Location startLocation = center.clone().add(random.nextDouble()* 0.25, random.nextDouble()* 0.25, random.nextDouble()* 0.25);
+            Location targetLocation = center.clone().add(destX, destY, destZ);
+            Particle.Trail trailData = new Particle.Trail(targetLocation, trailColor, durationTicks);
+            
+            center.getWorld().spawnParticle(Particle.TRAIL, startLocation, 0, trailData);
+        }
     }
 
     public static void impactPlasma(ProjectileHitEvent event) {
@@ -94,6 +118,28 @@ public abstract class ProjectileUtil {
             loc.getWorld().playSound(loc, "quake.weapons.impact_energy", 0.5f, 1);
             loc.getWorld().spawnParticle(Particle.SMOKE, loc, 16, 0, 0, 0, 0.1);
         }
+        
+        // Spawn cyan TRAIL particles on explosion with randomized destinations and durations
+        Location center = loc.clone();
+        center.setY(center.getY() + 0.05);
+        Color trailColor = Color.fromRGB(0x00FFFF);
+        Random random = new Random();
+        
+        for (int i = 0; i < 32; i++) {
+            // Randomize destination in all directions
+            double destX = (random.nextDouble() - 0.5) * 2.0; // -1.0 to 1.0
+            double destY = (random.nextDouble() - 0.5) * 2.0; // 0 to 1.5 upward
+            double destZ = (random.nextDouble() - 0.5) * 2.0; // -1.0 to 1.0
+            
+            // Randomize duration for varied trail lengths
+            int durationTicks = random.nextInt(8) + 5; // 5 to 12 ticks
+            
+            Location targetLocation = center.clone().add(destX, destY, destZ);
+            Particle.Trail trailData = new Particle.Trail(targetLocation, trailColor, durationTicks);
+            
+            center.getWorld().spawnParticle(Particle.TRAIL, center, 0, trailData);
+        }
+        
         explodeCustom(loc, attacker, impactEntity, 2, 6, 6, 0.4, DamageCause.PLASMA, DamageCause.PLASMA_SPLASH);
     }
 
