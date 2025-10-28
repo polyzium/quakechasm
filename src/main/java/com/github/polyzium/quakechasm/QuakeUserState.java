@@ -66,7 +66,10 @@ public class QuakeUserState {
     public Match currentMatch;
     public DamageData lastDamage;
     public Chatroom currentChat = Chatroom.GLOBAL;
-    
+
+    // Strafe jump state
+    public int strafeJumpTicks = 0;
+
     // Medal tracking
     public HashMap<MedalType, Integer> medals = new HashMap<>();
     public long lastKillTime = 0;

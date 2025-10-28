@@ -19,9 +19,12 @@
 
 package com.github.polyzium.quakechasm.game.movement;
 
+import com.github.polyzium.quakechasm.QuakeUserState;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.util.Vector;
 
 import java.time.Duration;
@@ -31,11 +34,12 @@ import static com.github.polyzium.quakechasm.misc.MiscUtil.GRAVITY;
 
 // How to use: press sprint, hold down W and then look left or right
 public class StrafeJumpHandler {
-    private static final double AIR_ACCELERATION = 0.2;
-    private static final double MAX_SPEED_MULTIPLIER = 1.8;
+    private static final int TICK_INTERVAL = 5; // Apply velocity every 5 ticks to reduce ACK delays
+    private static final double AIR_ACCELERATION = 0.4*TICK_INTERVAL;
+    private static final double MAX_SPEED_MULTIPLIER = 1.8*TICK_INTERVAL;
     private static final double ANGLE_THRESHOLD = 0.975;
 
-    public static void applyStrafeAcceleration(Player player, Vector velocity) {
+    public static void applyStrafeAcceleration(Player player, QuakeUserState userState, Vector velocity) {
         if (player.isOnGround() || player.isFlying() || player.isSneaking() || !player.isSprinting()) {
             return;
         }
@@ -50,8 +54,9 @@ public class StrafeJumpHandler {
 
         double alignment = lookDir.dot(horizontalVel.normalize());
 
-        if (Math.abs(alignment) < ANGLE_THRESHOLD) {
-            double baseSpeed = player.getWalkSpeed() * 10;
+        // TODO possibly ping adaptive strafejumping algorithm
+        if (Math.abs(alignment) < ANGLE_THRESHOLD && userState.strafeJumpTicks % TICK_INTERVAL == 0) {
+            double baseSpeed = player.getWalkSpeed() * TICK_INTERVAL;
             double currentSpeed = horizontalVel.length();
             double maxSpeed = baseSpeed * MAX_SPEED_MULTIPLIER;
 

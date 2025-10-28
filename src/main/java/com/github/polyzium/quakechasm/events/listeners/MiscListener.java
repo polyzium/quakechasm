@@ -81,11 +81,10 @@ public class MiscListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        
-        // Apply strafe acceleration when airborne and moving
-        Vector velocity = event.getTo().toVector().subtract(event.getFrom().toVector());
 
-        StrafeJumpHandler.applyStrafeAcceleration(player, velocity);
+        userState.strafeJumpTicks++;
+        Vector velocity = event.getTo().toVector().subtract(event.getFrom().toVector());
+        StrafeJumpHandler.applyStrafeAcceleration(player, userState, velocity);
     }
 
     // Telefrag: kill any entity at the teleport destination
