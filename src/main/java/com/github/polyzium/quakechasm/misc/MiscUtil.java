@@ -50,32 +50,34 @@ public abstract class MiscUtil {
     }
 
     public static ArrayList<Vector> calculateTrajectory(Location startLoc, Vector initialVelocity) {
-        ArrayList<Vector> trajectory = new ArrayList<>(32);
-        Vector currentVelocity = initialVelocity.clone();
-        Vector currentPos = startLoc.toVector();
+        ArrayList<Vector> trajectory = new ArrayList<>(128);
+        Vector pos = startLoc.toVector();
         World world = startLoc.getWorld();
 
-        trajectory.add(currentPos.clone());
+        Vector velocity = initialVelocity.clone();
+        // Tick 0: Apply ground friction to X/Z if starting on ground
+        velocity.setX(velocity.getX() * 0.6);
+        velocity.setZ(velocity.getZ() * 0.6);
+
+        trajectory.add(pos.clone());
 
         for (int i = 0; i < 127; i++) {
-            Vector previousPos = currentPos.clone();
-            
-            if (i > 2) {
-                currentVelocity.setX(currentVelocity.getX() * AIR_DRAG);
-                currentVelocity.setZ(currentVelocity.getZ() * AIR_DRAG);
-                currentVelocity.setY(currentVelocity.getY() - GRAVITY);
+            Vector nextPos;
+            if (i == 3) {
+                velocity = initialVelocity.clone();
+            } else {
+                velocity.setY(velocity.getY() - GRAVITY);
+                velocity.setX(velocity.getX() * AIR_DRAG);
+                velocity.setZ(velocity.getZ() * AIR_DRAG);
             }
-            currentPos.add(currentVelocity);
+            nextPos = pos.clone().add(velocity);
 
-            // Raytrace between previous and current position to detect walls
-            if (raytraceHitsBlock(world, previousPos, currentPos)) {
-                break;
-            }
+            if (raytraceHitsBlock(world, pos, nextPos)) break;
 
-            trajectory.add(currentPos.clone());
+            pos.copy(nextPos);
+            trajectory.add(pos.clone());
 
-            if (world.getBlockAt(currentPos.toLocation(world)).getType() != Material.AIR)
-                break;
+            if (world.getBlockAt(pos.toLocation(world)).getType() != Material.AIR) break;
         }
 
         return trajectory;
@@ -98,8 +100,8 @@ public abstract class MiscUtil {
         for (int i = 0; i <= steps; i++) {
             Vector checkPos = start.clone().add(direction.clone().multiply(i * step));
             Location checkLoc = checkPos.toLocation(world);
-            
-            if (world.getBlockAt(checkLoc).getType() != Material.AIR) {
+
+            if (!world.getBlockAt(checkLoc).isPassable()) {
                 return true;
             }
         }

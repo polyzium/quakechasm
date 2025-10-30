@@ -19,9 +19,13 @@
 
 package com.github.polyzium.quakechasm.commands;
 
+import com.github.polyzium.quakechasm.events.listeners.MapperToolListener;
+import com.github.polyzium.quakechasm.game.mapper.PortalTool;
+import com.github.polyzium.quakechasm.game.mapper.SpawnerTool;
 import com.github.polyzium.quakechasm.game.combat.DamageCause;
 import com.github.polyzium.quakechasm.game.entities.pickups.*;
 import com.github.polyzium.quakechasm.matchmaking.factory.*;
+import com.github.polyzium.quakechasm.matchmaking.matches.FFAMatch;
 import com.github.polyzium.quakechasm.misc.Chatroom;
 import com.github.polyzium.quakechasm.misc.MiscUtil;
 import com.github.polyzium.quakechasm.misc.ParticleUtil;
@@ -70,13 +74,22 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+import static com.github.polyzium.quakechasm.game.combat.WeaponUtil.spawnParticlesLine;
+
 public abstract class Commands {
-   
+    public static Component getDeprecationMessage() {
+        return MiniMessage.miniMessage().deserialize(
+                "<red>This command is deprecated in favor of the <underlined><blue><click:run_command:/quake map toolkit><hover:show_text:'Click to get the toolkit'>Mapper Toolkit.</hover></click></blue></underlined>"
+        );
+    }
+
     public static void initQuakeCommand() {
+        
         CommandAPICommand jumppadCmd = new CommandAPICommand("jumppad")
                 .withSubcommand(new CommandAPICommand("create")
                         .withArguments(new DoubleArgument("power"))
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             Location loc = player.getLocation();
                             loc.set(
                                     Math.floor(loc.x()) + 0.5,
@@ -93,6 +106,7 @@ public abstract class Commands {
                 )
                 .withSubcommand(new CommandAPICommand("visualize")
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             Entity nearestJumppad = QEntityUtil.nearestEntity(player.getLocation(), 3, entity ->
                                     entity.getType() == EntityType.MARKER &&
                                             QEntityUtil.getEntityType(entity).equals("jumppad")
@@ -108,13 +122,16 @@ public abstract class Commands {
 
                                 ArrayList<Vector> trajectory = MiscUtil.calculateTrajectory(trigger.getLocation(), jumppad.getLaunchVec());
                                 Location prevLoc = null;
-                                for (Vector vector : trajectory) {
+                                for (int trajectoryIndex = 0; trajectoryIndex < trajectory.size(); trajectoryIndex++) {
+                                    Vector vector = trajectory.get(trajectoryIndex);
                                     World world = trigger.getLocation().getWorld();
                                     Location loc = vector.toLocation(world);
                                     if (prevLoc == null)
-                                        world.spawnParticle(Particle.DUST, loc, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x0000FF), 3));
-                                    else
-                                        ParticleUtil.drawRedstoneLine(prevLoc, loc, new Particle.DustOptions(Color.fromRGB(0x0000FF), 4));
+                                        world.spawnParticle(Particle.TRAIL, loc, 1, 0, 0, 0, 0, new Particle.Trail(loc, Color.fromRGB(0x0077FF), 60));
+                                    else {
+                                        int finalTrajectoryIndex = trajectoryIndex;
+                                        spawnParticlesLine(prevLoc, loc, 8, particleLocation -> loc.getWorld().spawnParticle(Particle.TRAIL, particleLocation, 1, 0, 0, 0, 0, new Particle.Trail(particleLocation, Color.fromRGB(0x0077FF), 40+finalTrajectoryIndex), true));
+                                    }
                                     prevLoc = loc;
                                 }
                             }
@@ -125,19 +142,23 @@ public abstract class Commands {
                                 new DoubleArgument("power")
                         )
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             double power = (double) args.get("power");
                             Location jpLoc = player.getLocation();
                             Vector launchVector = player.getEyeLocation().getDirection().multiply(power);
 
                             ArrayList<Vector> trajectory = MiscUtil.calculateTrajectory(jpLoc, launchVector);
                             Location prevLoc = null;
-                            for (Vector vector : trajectory) {
+                            for (int trajectoryIndex = 0; trajectoryIndex < trajectory.size(); trajectoryIndex++) {
+                                Vector vector = trajectory.get(trajectoryIndex);
                                 World world = player.getLocation().getWorld();
                                 Location loc = vector.toLocation(world);
                                 if (prevLoc == null)
-                                    world.spawnParticle(Particle.DUST, loc, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x0000FF), 3));
-                                else
-                                    ParticleUtil.drawRedstoneLine(prevLoc, loc, new Particle.DustOptions(Color.fromRGB(0x0000FF), 4));
+                                    world.spawnParticle(Particle.TRAIL, loc, 1, 0, 0, 0, 0, new Particle.Trail(loc, Color.fromRGB(0x00FF00), 60));
+                                else {
+                                    int finalTrajectoryIndex = trajectoryIndex;
+                                    spawnParticlesLine(prevLoc, loc, 8, particleLocation -> loc.getWorld().spawnParticle(Particle.TRAIL, particleLocation, 1, 0, 0, 0, 0, new Particle.Trail(particleLocation, Color.fromRGB(0x0077FF), 40 + finalTrajectoryIndex), true));
+                                }
                                 prevLoc = loc;
                             }
 
@@ -163,6 +184,7 @@ public abstract class Commands {
                                 new LocationArgument("launchVector")
                         )
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             Location jpLocation = (Location) args.get("jpLocation");
                             Vector launchVector = ((Location) args.get("launchVector")).toVector().clone();
 
@@ -183,6 +205,7 @@ public abstract class Commands {
         CommandAPICommand portalCmd = new CommandAPICommand("portal")
                 .withSubcommand(new CommandAPICommand("create")
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             QuakeUserState state = QuakePlugin.INSTANCE.userStates.get(player);
                             if (state.portalLoc == null) {
                                 state.portalLoc = player.getLocation();
@@ -201,6 +224,7 @@ public abstract class Commands {
                 )
                 .withSubcommand(new CommandAPICommand("cancel")
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             QuakeUserState state = QuakePlugin.INSTANCE.userStates.get(player);
                             if (state.portalLoc == null) {
                                 player.sendMessage(TranslationManager.t("command.generic.cancelledAlready", player));
@@ -218,6 +242,7 @@ public abstract class Commands {
                                         .includeSuggestions(ArgumentSuggestions.strings("small", "medium", "large", "mega"))
                         )
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             Location loc = player.getLocation();
                             loc.set(
                                     Math.floor(loc.x())+0.5,
@@ -258,6 +283,7 @@ public abstract class Commands {
                                         .includeSuggestions(ArgumentSuggestions.strings(AmmoSpawner.ALIASES))
                         )
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             Location loc = player.getLocation();
                             loc.set(
                                     Math.floor(loc.x())+0.5,
@@ -286,6 +312,7 @@ public abstract class Commands {
                                         .includeSuggestions(ArgumentSuggestions.strings("shard", "light", "heavy"))
                         )
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             Location loc = player.getLocation();
                             loc.set(
                                     Math.floor(loc.x())+0.5,
@@ -325,6 +352,7 @@ public abstract class Commands {
                                         ))
                         )
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             Location loc = player.getLocation();
                             loc.set(
                                     Math.floor(loc.x())+0.5,
@@ -353,6 +381,7 @@ public abstract class Commands {
                                         .includeSuggestions(ArgumentSuggestions.strings("red", "blue"))
                         )
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             Location loc = player.getLocation();
                             loc.set(
                                     Math.floor(loc.x())+0.5,
@@ -385,6 +414,7 @@ public abstract class Commands {
                                 "bfg"
                         )))
                         .executesPlayer((player, args) -> {
+                            player.sendMessage(getDeprecationMessage());
                             int weaponIndex = switch ((String) args.get("weapon")) {
                                 case "machinegun" -> WeaponType.MACHINEGUN;
                                 case "shotgun" -> WeaponType.SHOTGUN;
@@ -605,8 +635,55 @@ public abstract class Commands {
 //                            } catch (IncompleteRegionException e) {
 //                                throw new RuntimeException(e);
 //                            }
-                        })
-                );
+                       })
+               )
+               .withSubcommand(new CommandAPICommand("toolkit")
+                       .executesPlayer((player, args) -> {
+                           // Core tools
+                           player.getInventory().addItem(MapperToolListener.createEntityTool());
+                           player.getInventory().addItem(MapperToolListener.createJumppadTool());
+                           player.getInventory().addItem(PortalTool.createPortalTool());
+                           
+                           // Spawnpoint tools
+                           player.getInventory().addItem(MapperToolListener.createSpawnpointTool(Team.RED));
+                           player.getInventory().addItem(MapperToolListener.createSpawnpointTool(Team.BLUE));
+                           player.getInventory().addItem(MapperToolListener.createSpawnpointTool(Team.FREE));
+                           player.getInventory().addItem(MapperToolListener.createSpawnpointTool(Team.SPECTATOR));
+                           
+                           // CTF Flag tools
+                           player.getInventory().addItem(SpawnerTool.createRedFlagTool());
+                           player.getInventory().addItem(SpawnerTool.createBlueFlagTool());
+                           
+                           // Weapon Spawner tools (7 weapons)
+                           for (int i = 0; i < 7; i++) {
+                               player.getInventory().addItem(SpawnerTool.createWeaponSpawnerTool(i));
+                           }
+                           
+                           // Ammo Spawner tools (7 ammo types)
+                           for (int i = 0; i < 7; i++) {
+                               player.getInventory().addItem(SpawnerTool.createAmmoSpawnerTool(i));
+                           }
+                           
+                           // Health Spawner tools (4 types)
+                           player.getInventory().addItem(SpawnerTool.createHealthSpawnerTool(1));  // Small
+                           player.getInventory().addItem(SpawnerTool.createHealthSpawnerTool(5));  // Medium
+                           player.getInventory().addItem(SpawnerTool.createHealthSpawnerTool(10)); // Large
+                           player.getInventory().addItem(SpawnerTool.createHealthSpawnerTool(20)); // Mega
+                           
+                           // Armor Spawner tools (3 types)
+                           player.getInventory().addItem(SpawnerTool.createArmorSpawnerTool(5));   // Shard
+                           player.getInventory().addItem(SpawnerTool.createArmorSpawnerTool(50));  // Light
+                           player.getInventory().addItem(SpawnerTool.createArmorSpawnerTool(100)); // Heavy
+                           
+                           // Powerup Spawner tools (3 types)
+                           player.getInventory().addItem(SpawnerTool.createPowerupSpawnerTool(PowerupType.QUAD_DAMAGE));
+                           player.getInventory().addItem(SpawnerTool.createPowerupSpawnerTool(PowerupType.REGENERATION));
+                           player.getInventory().addItem(SpawnerTool.createPowerupSpawnerTool(PowerupType.PROTECTION));
+                           
+                           player.sendMessage(net.kyori.adventure.text.Component.text("Mapper toolkit added to inventory")
+                               .color(net.kyori.adventure.text.format.NamedTextColor.GREEN));
+                       })
+               );
 
 
         StringArgument matchModeArg = (StringArgument) new StringArgument("mode")
@@ -979,17 +1056,23 @@ public abstract class Commands {
 
 //                    QuakePlugin.INSTANCE.userStates.get(player).currentMatch.onDeath(player, player, DamageCause.UNKNOWN);
 
-                    for (DamageCause damageCause : DamageCause.values()) {
-                        player.sendMessage("§bSelf: "+damageCause.name());
-                        QuakePlugin.INSTANCE.userStates.get(player).currentMatch.onDeath(player, player, damageCause);
-                    }
+//                    for (DamageCause damageCause : DamageCause.values()) {
+//                        player.sendMessage("§bSelf: "+damageCause.name());
+//                        QuakePlugin.INSTANCE.userStates.get(player).currentMatch.onDeath(player, player, damageCause);
+//                    }
+//
+//                    Entity attacker = player.getWorld().spawnEntity(player.getLocation(), EntityType.PIG);
+//                    for (DamageCause damageCause : DamageCause.values()) {
+//                        player.sendMessage("§bAttacker: "+damageCause.name());
+//                        QuakePlugin.INSTANCE.userStates.get(player).currentMatch.onDeath(player, attacker, damageCause);
+//                    }
+//                    attacker.remove();
 
-                    Entity attacker = player.getWorld().spawnEntity(player.getLocation(), EntityType.PIG);
-                    for (DamageCause damageCause : DamageCause.values()) {
-                        player.sendMessage("§bAttacker: "+damageCause.name());
-                        QuakePlugin.INSTANCE.userStates.get(player).currentMatch.onDeath(player, attacker, damageCause);
-                    }
-                    attacker.remove();
+                    QuakeUserState userState = QuakePlugin.INSTANCE.userStates.get(player);
+//                    for (int i = 0; i < 60; i++) {
+//                        userState.currentMatch.onDeath(userState.currentMatch.getPlayers().getLast(), player, DamageCause.UNKNOWN);
+//                    }
+                    ((FFAMatch) userState.currentMatch).fraglimit = 200;
                 });
 
         CommandAPICommand menuCmd = new CommandAPICommand("menu")

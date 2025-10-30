@@ -339,6 +339,7 @@ public class QuakePlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new TriggerListener(), this);
         getServer().getPluginManager().registerEvents(new CombatListener(), this);
         getServer().getPluginManager().registerEvents(new MenuListener(), this);
+        getServer().getPluginManager().registerEvents(new MapperToolListener(), this);
 
         // lobby
         getLogger().info("Initializing lobby world");

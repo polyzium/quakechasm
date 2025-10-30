@@ -323,6 +323,130 @@
       "second": "nd",
       "third": "rd",
       "nth": "th"
+    },
+    "mapper": {
+      "tool": {
+        "entity": {
+          "name": "Entity Tool",
+          "lore": {
+            "leftClick": "Left-click: Remove entity",
+            "rightClick": "Right-click: Move entity"
+          },
+          "message": {
+            "cancelled": "Entity relocation cancelled",
+            "noBlock": "No block in sight to place entity",
+            "noEntity": "No entity to remove",
+            "noEntityMove": "No entity to move",
+            "noEntityMoving": "No entity being moved",
+            "removed": "Removed <entity_type> at <location>",
+            "startedMoving": "Started moving <entity_type>. Right-click again to place it.",
+            "placed": "Placed <entity_type> at <location>"
+          },
+          "subtitle": {
+            "noEntity": "No entity in sight",
+            "entityInfo": "<entity_type> at <location>"
+          }
+        },
+        "jumppad": {
+          "name": "Jumppad Tool",
+          "lore": {
+            "pointAtJumppad": "Point at jumppad:",
+            "leftClickEdit": "  Left-click: Edit landing position",
+            "pointAtBlock": "Point at block:",
+            "rightClickPlace": "  Right-click: Place jumppad",
+            "rightClickLanding": "  Right-click again: Set landing",
+            "leftClickCancel": "  Left-click: Cancel"
+          },
+          "message": {
+            "cancelled": "Jumppad placement cancelled",
+            "editCancelled": "Jumppad editing cancelled",
+            "clickLanding": "Click where you want the jumppad to land",
+            "pointAtJumppad": "Point at a jumppad to edit it",
+            "noBlock": "No block in sight",
+            "locationSet": "Jumppad location set at <location>. Right-click where you want it to land",
+            "updated": "Jumppad updated! Landing at <location> (Power: <power>x)",
+            "created": "Jumppad created at <location1>, landing at <location2> (Power: <power>x)",
+            "trajectoryFailed": "Could not calculate trajectory - try adjusting power"
+          },
+          "subtitle": {
+            "landing": "Landing: <location>",
+            "power": "Jumppad Power: <power>x"
+          }
+        },
+        "spawnpoint": {
+          "name": {
+            "red": "Red Spawnpoint",
+            "blue": "Blue Spawnpoint",
+            "free": "Free/FFA Spawnpoint",
+            "spectator": "Spectator Spawnpoint"
+          },
+          "lore": {
+            "rightClick": "Right-click on block to place",
+            "team": "Team: <team>"
+          },
+          "message": {
+            "invalid": "Invalid spawnpoint tool",
+            "placed": "<team> spawnpoint placed at <location>"
+          },
+          "team": {
+            "red": "Red",
+            "blue": "Blue",
+            "free": "Free/FFA",
+            "spectator": "Spectator"
+          }
+        },
+        "portal": {
+          "name": "Portal Tool",
+          "lore": {
+            "pointAtPortal": "Point at portal:",
+            "leftClickEdit": "  Left-click: Edit target teleport position",
+            "pointAtBlock": "Point at block:",
+            "rightClickPlace": "  Right-click: Place portal",
+            "rightClickTarget": "  Right-click again: Set teleport target",
+            "leftClickCancel": "  Left-click: Cancel"
+          },
+          "message": {
+            "placementCancelled": "Portal placement cancelled",
+            "targetCancelled": "Portal target setting cancelled",
+            "editCancelled": "Portal editing cancelled",
+            "clickTarget": "Click where you want the portal to teleport to",
+            "pointAtPortal": "Point at a portal to edit it",
+            "noBlock": "No block in sight",
+            "locationSet": "Portal location set at <location>. Right-click where you want it to teleport to",
+            "targetUpdated": "Portal target updated! Now teleports to <location>",
+            "created": "Portal created at <location1>, teleporting to <location2>"
+          },
+          "subtitle": {
+            "target": "Target: <location> (yaw: <yaw>°)"
+          }
+        },
+        "spawner": {
+          "name": {
+            "redFlag": "Red CTF Flag",
+            "blueFlag": "Blue CTF Flag",
+            "weapon": "Weapon Spawner: <weapon>",
+            "ammo": "Ammo Spawner: <ammo>",
+            "health": {
+              "small": "Health Spawner: Small Health (+5 HP)",
+              "medium": "Health Spawner: Medium Health (+25 HP)",
+              "large": "Health Spawner: Large Health (+50 HP)",
+              "mega": "Health Spawner: Mega Health (+100 HP)",
+              "generic": "Health Spawner: Health"
+            },
+            "armor": {
+              "shard": "Armor Spawner: Armor Shard (+5)",
+              "light": "Armor Spawner: Light Armor (+50)",
+              "heavy": "Armor Spawner: Heavy Armor (+100)",
+              "generic": "Armor Spawner: Armor"
+            },
+            "powerup": "Powerup Spawner: <powerup>"
+          },
+          "message": {
+            "invalid": "Invalid spawner tool",
+            "placed": "<spawner> placed at <location>"
+          }
+        }
+      }
     }
   }
 }

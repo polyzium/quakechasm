@@ -24,6 +24,9 @@ import com.github.polyzium.quakechasm.game.combat.MedalType;
 import com.github.polyzium.quakechasm.game.combat.WeaponType;
 import com.github.polyzium.quakechasm.game.combat.WeaponUserState;
 import com.github.polyzium.quakechasm.game.combat.WeaponUtil;
+import com.github.polyzium.quakechasm.game.entities.Trigger;
+import com.github.polyzium.quakechasm.game.entities.triggers.Jumppad;
+import com.github.polyzium.quakechasm.game.mapper.PortalTool;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -74,6 +77,19 @@ public class QuakeUserState {
     public HashMap<MedalType, Integer> medals = new HashMap<>();
     public long lastKillTime = 0;
     public int consecutiveRailgunHits = 0;
+
+    // Mapper toolkit state
+    public Trigger movingEntity = null;
+    public boolean holdingEntityTool = false;
+
+    // Jumppad tool state
+    public Location jumppadPlacementLoc = null;
+    public Jumppad editingJumppad = null;
+    public boolean settingLandingPos = false;
+    public double jumppadPowerMultiplier = 1.0;
+
+    // Portal tool state
+    public PortalTool.PortalToolData portalToolData = new PortalTool.PortalToolData();
 
     public QuakeUserState(Player player) {
         this.player = player;

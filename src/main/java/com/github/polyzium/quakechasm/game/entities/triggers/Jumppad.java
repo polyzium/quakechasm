@@ -58,7 +58,7 @@ public class Jumppad implements Trigger {
         pdc.set(new NamespacedKey(QuakePlugin.INSTANCE, "launch_vec"), PersistentDataType.BYTE_ARRAY, serializedLaunchVec);
 
         this.particleEmitter = this.newParticleEmitter();
-        this.particleEmitter.runTaskTimer(QuakePlugin.INSTANCE, 0, 1);
+        this.particleEmitter.runTaskTimer(QuakePlugin.INSTANCE, 0, 15);
         QuakePlugin.INSTANCE.triggers.add(this);
     }
 

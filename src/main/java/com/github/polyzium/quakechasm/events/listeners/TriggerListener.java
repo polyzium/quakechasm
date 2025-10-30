@@ -61,7 +61,9 @@ public class TriggerListener implements Listener {
             Vector triggerMax = triggerLoc.toVector().add(bb.getMax());
             BoundingBox absoluteBb = BoundingBox.of(triggerMin, triggerMax);
 
-            if (absoluteBb.overlaps(player.getBoundingBox()) && !player.isDead() && player.getGameMode() != GameMode.SPECTATOR) {
+            boolean holdingEntityTool = QuakePlugin.INSTANCE.userStates.get(player).holdingEntityTool;
+
+            if (absoluteBb.overlaps(player.getBoundingBox()) && !player.isDead() && player.getGameMode() != GameMode.SPECTATOR && !holdingEntityTool) {
                 trigger.onTrigger(player);
             }
         }
